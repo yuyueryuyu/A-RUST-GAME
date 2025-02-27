@@ -2,6 +2,12 @@ use bevy::{
     prelude::*
 };
 
+#[derive(Component)]
+pub struct Background {
+    pub starting_position: Vec2,
+    pub starting_z: f32,
+}
+
 fn setup_bg(mut commands: Commands, asset_server: Res<AssetServer>) {
     let background_size_x = 320.0;
     let background_size_y = 192.0;
@@ -16,7 +22,11 @@ fn setup_bg(mut commands: Commands, asset_server: Res<AssetServer>) {
             },
             ..default()
         },
-        Transform::from_xyz(0.0, 0.0, -1.5)
+        Transform::from_xyz(0.0, 0.0, -2.5),
+        Background {
+            starting_position: Vec2::ZERO,
+            starting_z: -1.5
+        }
     ));
     commands.spawn((
         Sprite {
@@ -29,7 +39,11 @@ fn setup_bg(mut commands: Commands, asset_server: Res<AssetServer>) {
             },
             ..default()
         },
-        Transform::from_xyz(0.0, 0.0, -0.9)
+        Transform::from_xyz(0.0, 0.0, -1.5),
+        Background {
+            starting_position: Vec2::ZERO,
+            starting_z: -0.9
+        }
     ));
     commands.spawn((
         Sprite {
@@ -42,7 +56,11 @@ fn setup_bg(mut commands: Commands, asset_server: Res<AssetServer>) {
             },
             ..default()
         },
-        Transform::from_xyz(0.0, 0.0, -0.3)
+        Transform::from_xyz(0.0, 0.0, -1.0),
+        Background {
+            starting_position: Vec2::ZERO,
+            starting_z: -0.3
+        }
     ));
 }
 

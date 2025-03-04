@@ -4,6 +4,8 @@ use bevy_ecs_tilemap::prelude::*;
 use avian2d::prelude::*;
 use tiled::Map;
 
+use crate::game_layer::GameLayer;
+
 fn setup_tilesets(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         TiledMapHandle(
@@ -27,8 +29,12 @@ impl TiledPhysicsBackend for MyCustomAvianPhysicsBackend {
         collider_source: &TiledColliderSource,
     ) -> Option<TiledColliderSpawnInfos> {
         let collider = self.0.spawn_collider(commands, map, collider_source);
+        let collider_layer = CollisionLayers::new(
+            GameLayer::Ground,
+            [GameLayer::Default, GameLayer::Player, GameLayer::Enemy],
+        );
         if let Some(c) = &collider {
-            commands.entity(c.entity).insert(RigidBody::Static);
+            commands.entity(c.entity).insert(RigidBody::Static).insert(collider_layer);
         }
         collider
     }

@@ -3002,6 +3002,7 @@ dependencies = [
  "bevy_ecs_tiled",
  "bevy_ecs_tilemap",
  "leafwing-input-manager",
+ "seldom_state",
  "tiled",
 ]
 
@@ -4142,6 +4143,16 @@ dependencies = [
  "memmap2",
  "smithay-client-toolkit",
  "tiny-skia",
+]
+
+[[package]]
+name = "seldom_state"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db86d14a4cfa1107d023fe7515f935229b142dcbe98332fb82f49fa937527f81"
+dependencies = [
+ "bevy",
+ "either",
 ]
 
 [[package]]

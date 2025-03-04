@@ -100,7 +100,7 @@
     ]
   },
   {
-    "id": 157,
+    "id": 158,
     "name": "avian2d::collision::collider::ColliderParent",
     "type": "class",
     "useAs": [
@@ -117,7 +117,7 @@
     ]
   },
   {
-    "id": 180,
+    "id": 181,
     "name": "avian2d::collision::collider::ColliderTransform",
     "type": "class",
     "useAs": [
@@ -175,7 +175,7 @@
     "members": []
   },
   {
-    "id": 88,
+    "id": 89,
     "name": "avian2d::collision::layers::CollisionLayers",
     "type": "class",
     "useAs": [
@@ -284,7 +284,7 @@
     ]
   },
   {
-    "id": 215,
+    "id": 216,
     "name": "avian2d::dynamics::ccd::SpeculativeMargin",
     "type": "class",
     "useAs": [
@@ -363,7 +363,7 @@
     ]
   },
   {
-    "id": 185,
+    "id": 186,
     "name": "avian2d::dynamics::rigid_body::AccumulatedTranslation",
     "type": "class",
     "useAs": [
@@ -571,7 +571,7 @@
     "valuesAsFlags": false
   },
   {
-    "id": 69,
+    "id": 70,
     "name": "avian2d::dynamics::rigid_body::RigidBodyDisabled",
     "type": "class",
     "useAs": [
@@ -593,7 +593,7 @@
     "members": []
   },
   {
-    "id": 205,
+    "id": 206,
     "name": "avian2d::dynamics::rigid_body::SleepingDisabled",
     "type": "class",
     "useAs": [
@@ -621,7 +621,7 @@
     ]
   },
   {
-    "id": 158,
+    "id": 159,
     "name": "avian2d::dynamics::rigid_body::forces::ExternalAngularImpulse",
     "type": "class",
     "useAs": [
@@ -643,7 +643,7 @@
     ]
   },
   {
-    "id": 87,
+    "id": 88,
     "name": "avian2d::dynamics::rigid_body::forces::ExternalForce",
     "type": "class",
     "useAs": [
@@ -671,7 +671,7 @@
     ]
   },
   {
-    "id": 219,
+    "id": 220,
     "name": "avian2d::dynamics::rigid_body::forces::ExternalImpulse",
     "type": "class",
     "useAs": [
@@ -793,7 +793,7 @@
     ]
   },
   {
-    "id": 209,
+    "id": 210,
     "name": "avian2d::dynamics::rigid_body::mass_properties::components::NoAutoAngularInertia",
     "type": "class",
     "useAs": [
@@ -815,7 +815,7 @@
     "members": []
   },
   {
-    "id": 195,
+    "id": 196,
     "name": "avian2d::dynamics::rigid_body::mass_properties::components::NoAutoMass",
     "type": "class",
     "useAs": [
@@ -861,7 +861,7 @@
     ]
   },
   {
-    "id": 202,
+    "id": 203,
     "name": "avian2d::dynamics::rigid_body::mass_properties::components::computed::ComputedAngularInertia",
     "type": "class",
     "useAs": [
@@ -878,7 +878,7 @@
     ]
   },
   {
-    "id": 220,
+    "id": 221,
     "name": "avian2d::dynamics::rigid_body::mass_properties::components::computed::ComputedCenterOfMass",
     "type": "class",
     "useAs": [
@@ -899,7 +899,7 @@
     ]
   },
   {
-    "id": 207,
+    "id": 208,
     "name": "avian2d::dynamics::rigid_body::mass_properties::components::computed::ComputedMass",
     "type": "class",
     "useAs": [
@@ -958,7 +958,7 @@
     ]
   },
   {
-    "id": 165,
+    "id": 166,
     "name": "avian2d::dynamics::rigid_body::physics_material::Restitution",
     "type": "class",
     "useAs": [
@@ -1160,7 +1160,7 @@
     ]
   },
   {
-    "id": 82,
+    "id": 84,
     "name": "avian2d::dynamics::solver::joints::fixed::FixedJoint",
     "type": "class",
     "useAs": [
@@ -1230,7 +1230,7 @@
     ]
   },
   {
-    "id": 77,
+    "id": 78,
     "name": "avian2d::dynamics::solver::joints::prismatic::PrismaticJoint",
     "type": "class",
     "useAs": [
@@ -1404,7 +1404,7 @@
     ]
   },
   {
-    "id": 216,
+    "id": 217,
     "name": "avian2d::dynamics::solver::schedule::SubstepCount",
     "type": "class",
     "useAs": [
@@ -1442,7 +1442,7 @@
     ]
   },
   {
-    "id": 76,
+    "id": 77,
     "name": "avian2d::position::PreSolveAccumulatedTranslation",
     "type": "class",
     "useAs": [
@@ -1484,7 +1484,7 @@
     ]
   },
   {
-    "id": 175,
+    "id": 176,
     "name": "avian2d::position::Rotation",
     "type": "class",
     "useAs": [
@@ -1584,7 +1584,7 @@
     "members": []
   },
   {
-    "id": 156,
+    "id": 157,
     "name": "avian2d::sync::ancestor_marker::AncestorMarker<avian2d::dynamics::rigid_body::RigidBody>",
     "type": "class",
     "useAs": [
@@ -1595,7 +1595,7 @@
     "members": []
   },
   {
-    "id": 81,
+    "id": 83,
     "name": "bevy_a11y::Focus",
     "type": "class",
     "useAs": [
@@ -1708,7 +1708,7 @@
     "valuesAsFlags": false
   },
   {
-    "id": 203,
+    "id": 204,
     "name": "bevy_audio::audio::PlaybackSettings",
     "type": "class",
     "useAs": [
@@ -2431,7 +2431,7 @@
       {
         "name": "hash",
         "type": "int",
-        "value": 6423604351566580075
+        "value": 1017424736412392035
       },
       {
         "name": "name",
@@ -2675,7 +2675,7 @@
     ]
   },
   {
-    "id": 200,
+    "id": 201,
     "name": "bevy_core_pipeline::core_3d::camera_3d::ScreenSpaceTransmissionQuality",
     "type": "enum",
     "storageType": "string",
@@ -3085,7 +3085,7 @@
     ]
   },
   {
-    "id": 73,
+    "id": 74,
     "name": "bevy_ecs_tilemap::map::TilemapType",
     "type": "class",
     "useAs": [
@@ -3115,7 +3115,7 @@
     ]
   },
   {
-    "id": 70,
+    "id": 71,
     "name": "bevy_ecs_tilemap::map::TilemapType:::Variant",
     "type": "enum",
     "storageType": "string",
@@ -3127,7 +3127,7 @@
     "valuesAsFlags": false
   },
   {
-    "id": 71,
+    "id": 72,
     "name": "bevy_ecs_tilemap::map::TilemapType::Hexagon",
     "type": "class",
     "useAs": [
@@ -3145,7 +3145,7 @@
     ]
   },
   {
-    "id": 72,
+    "id": 73,
     "name": "bevy_ecs_tilemap::map::TilemapType::Isometric",
     "type": "class",
     "useAs": [
@@ -3163,7 +3163,7 @@
     ]
   },
   {
-    "id": 160,
+    "id": 161,
     "name": "bevy_ecs_tilemap::tiles::TileColor",
     "type": "class",
     "useAs": [
@@ -3180,7 +3180,7 @@
     ]
   },
   {
-    "id": 163,
+    "id": 164,
     "name": "bevy_ecs_tilemap::tiles::TileFlip",
     "type": "class",
     "useAs": [
@@ -3264,7 +3264,7 @@
     ]
   },
   {
-    "id": 161,
+    "id": 162,
     "name": "bevy_ecs_tilemap::tiles::TileVisible",
     "type": "class",
     "useAs": [
@@ -3281,7 +3281,7 @@
     ]
   },
   {
-    "id": 199,
+    "id": 200,
     "name": "bevy_gizmos::config::GizmoConfigStore",
     "type": "class",
     "useAs": [
@@ -3292,7 +3292,7 @@
     "members": []
   },
   {
-    "id": 86,
+    "id": 87,
     "name": "bevy_gltf::GltfExtras",
     "type": "class",
     "useAs": [
@@ -3309,7 +3309,7 @@
     ]
   },
   {
-    "id": 183,
+    "id": 184,
     "name": "bevy_gltf::GltfMaterialExtras",
     "type": "class",
     "useAs": [
@@ -3360,7 +3360,7 @@
     ]
   },
   {
-    "id": 197,
+    "id": 198,
     "name": "bevy_gltf::GltfSceneExtras",
     "type": "class",
     "useAs": [
@@ -3422,7 +3422,7 @@
     ]
   },
   {
-    "id": 79,
+    "id": 80,
     "name": "bevy_input::mouse::AccumulatedMouseMotion",
     "type": "class",
     "useAs": [
@@ -3443,7 +3443,7 @@
     ]
   },
   {
-    "id": 80,
+    "id": 81,
     "name": "bevy_input::mouse::AccumulatedMouseScroll",
     "type": "class",
     "useAs": [
@@ -3528,7 +3528,7 @@
     ]
   },
   {
-    "id": 168,
+    "id": 169,
     "name": "bevy_pbr::bundle::CascadesVisibleEntities",
     "type": "class",
     "useAs": [
@@ -3539,7 +3539,7 @@
     "members": []
   },
   {
-    "id": 214,
+    "id": 215,
     "name": "bevy_pbr::bundle::CubemapVisibleEntities",
     "type": "class",
     "useAs": [
@@ -3550,7 +3550,7 @@
     "members": []
   },
   {
-    "id": 208,
+    "id": 209,
     "name": "bevy_pbr::bundle::VisibleMeshEntities",
     "type": "class",
     "useAs": [
@@ -3561,7 +3561,7 @@
     "members": []
   },
   {
-    "id": 192,
+    "id": 193,
     "name": "bevy_pbr::cluster::ClusterConfig",
     "type": "class",
     "useAs": [
@@ -3591,7 +3591,7 @@
     ]
   },
   {
-    "id": 189,
+    "id": 190,
     "name": "bevy_pbr::cluster::ClusterConfig:::Variant",
     "type": "enum",
     "storageType": "string",
@@ -3604,7 +3604,7 @@
     "valuesAsFlags": false
   },
   {
-    "id": 191,
+    "id": 192,
     "name": "bevy_pbr::cluster::ClusterConfig::FixedZ",
     "type": "class",
     "useAs": [
@@ -3637,7 +3637,7 @@
     ]
   },
   {
-    "id": 190,
+    "id": 191,
     "name": "bevy_pbr::cluster::ClusterConfig::XYZ",
     "type": "class",
     "useAs": [
@@ -3909,7 +3909,7 @@
     ]
   },
   {
-    "id": 173,
+    "id": 174,
     "name": "bevy_pbr::light::DirectionalLightShadowMap",
     "type": "class",
     "useAs": [
@@ -3937,7 +3937,7 @@
     "members": []
   },
   {
-    "id": 162,
+    "id": 163,
     "name": "bevy_pbr::light::NotShadowReceiver",
     "type": "class",
     "useAs": [
@@ -3977,7 +3977,7 @@
     "valuesAsFlags": false
   },
   {
-    "id": 179,
+    "id": 180,
     "name": "bevy_pbr::light::ambient_light::AmbientLight",
     "type": "class",
     "useAs": [
@@ -4088,7 +4088,7 @@
     ]
   },
   {
-    "id": 159,
+    "id": 160,
     "name": "bevy_pbr::light::spot_light::SpotLight",
     "type": "class",
     "useAs": [
@@ -4251,7 +4251,7 @@
     "valuesAsFlags": false
   },
   {
-    "id": 218,
+    "id": 219,
     "name": "bevy_pbr::mesh_material::MeshMaterial3d<bevy_pbr::pbr_material::StandardMaterial>",
     "type": "class",
     "useAs": [
@@ -4351,7 +4351,7 @@
     ]
   },
   {
-    "id": 155,
+    "id": 156,
     "name": "bevy_pbr::ssr::ScreenSpaceReflections",
     "type": "class",
     "useAs": [
@@ -4436,7 +4436,7 @@
     "members": []
   },
   {
-    "id": 68,
+    "id": 69,
     "name": "bevy_picking::PickingBehavior",
     "type": "class",
     "useAs": [
@@ -4485,7 +4485,7 @@
     ]
   },
   {
-    "id": 164,
+    "id": 165,
     "name": "bevy_picking::focus::PickingInteraction",
     "type": "enum",
     "storageType": "string",
@@ -4497,7 +4497,7 @@
     "valuesAsFlags": false
   },
   {
-    "id": 174,
+    "id": 175,
     "name": "bevy_picking::input::PointerInputPlugin",
     "type": "class",
     "useAs": [
@@ -4519,7 +4519,7 @@
     ]
   },
   {
-    "id": 217,
+    "id": 218,
     "name": "bevy_picking::pointer::PointerLocation",
     "type": "class",
     "useAs": [
@@ -4557,7 +4557,7 @@
     ]
   },
   {
-    "id": 201,
+    "id": 202,
     "name": "bevy_render::camera::camera::Camera",
     "type": "class",
     "useAs": [
@@ -4869,7 +4869,7 @@
     ]
   },
   {
-    "id": 176,
+    "id": 177,
     "name": "bevy_render::camera::projection::OrthographicProjection",
     "type": "class",
     "useAs": [
@@ -4946,7 +4946,7 @@
     ]
   },
   {
-    "id": 172,
+    "id": 173,
     "name": "bevy_render::camera::projection::Projection",
     "type": "class",
     "useAs": [
@@ -4976,7 +4976,7 @@
     ]
   },
   {
-    "id": 169,
+    "id": 170,
     "name": "bevy_render::camera::projection::Projection:::Variant",
     "type": "enum",
     "storageType": "string",
@@ -4987,7 +4987,7 @@
     "valuesAsFlags": false
   },
   {
-    "id": 171,
+    "id": 172,
     "name": "bevy_render::camera::projection::Projection::Orthographic",
     "type": "class",
     "useAs": [
@@ -5005,7 +5005,7 @@
     ]
   },
   {
-    "id": 170,
+    "id": 171,
     "name": "bevy_render::camera::projection::Projection::Perspective",
     "type": "class",
     "useAs": [
@@ -5213,7 +5213,7 @@
     ]
   },
   {
-    "id": 212,
+    "id": 213,
     "name": "bevy_render::mesh::components::Mesh2d",
     "type": "class",
     "useAs": [
@@ -5290,7 +5290,7 @@
     "members": []
   },
   {
-    "id": 75,
+    "id": 76,
     "name": "bevy_render::primitives::CubemapFrusta",
     "type": "class",
     "useAs": [
@@ -5476,7 +5476,7 @@
     ]
   },
   {
-    "id": 181,
+    "id": 182,
     "name": "bevy_scene::components::SceneRoot",
     "type": "class",
     "useAs": [
@@ -5872,7 +5872,7 @@
     ]
   },
   {
-    "id": 210,
+    "id": 211,
     "name": "bevy_text::bounds::TextBounds",
     "type": "class",
     "useAs": [
@@ -5950,7 +5950,7 @@
     "valuesAsFlags": false
   },
   {
-    "id": 184,
+    "id": 185,
     "name": "bevy_text::text::TextColor",
     "type": "class",
     "useAs": [
@@ -5995,7 +5995,7 @@
     ]
   },
   {
-    "id": 154,
+    "id": 155,
     "name": "bevy_text::text::TextLayout",
     "type": "class",
     "useAs": [
@@ -6036,7 +6036,7 @@
     ]
   },
   {
-    "id": 177,
+    "id": 178,
     "name": "bevy_transform::components::global_transform::GlobalTransform",
     "type": "class",
     "useAs": [
@@ -6142,7 +6142,7 @@
     "members": []
   },
   {
-    "id": 167,
+    "id": 168,
     "name": "bevy_transform_interpolation::NoTranslationEasing",
     "type": "class",
     "useAs": [
@@ -6201,7 +6201,7 @@
     ]
   },
   {
-    "id": 83,
+    "id": 82,
     "name": "bevy_transform_interpolation::TranslationEasingState",
     "type": "class",
     "useAs": [
@@ -6258,7 +6258,7 @@
     "members": []
   },
   {
-    "id": 166,
+    "id": 167,
     "name": "bevy_transform_interpolation::hermite::RotationHermiteEasing",
     "type": "class",
     "useAs": [
@@ -6269,7 +6269,7 @@
     "members": []
   },
   {
-    "id": 204,
+    "id": 205,
     "name": "bevy_transform_interpolation::hermite::TransformHermiteEasing",
     "type": "class",
     "useAs": [
@@ -6302,7 +6302,7 @@
     "members": []
   },
   {
-    "id": 186,
+    "id": 187,
     "name": "bevy_transform_interpolation::interpolation::ScaleInterpolation",
     "type": "class",
     "useAs": [
@@ -6324,7 +6324,7 @@
     "members": []
   },
   {
-    "id": 196,
+    "id": 197,
     "name": "bevy_ui::UiScale",
     "type": "class",
     "useAs": [
@@ -6341,7 +6341,7 @@
     ]
   },
   {
-    "id": 182,
+    "id": 183,
     "name": "bevy_ui::focus::FocusPolicy",
     "type": "enum",
     "storageType": "string",
@@ -6352,7 +6352,7 @@
     "valuesAsFlags": false
   },
   {
-    "id": 74,
+    "id": 75,
     "name": "bevy_ui::focus::Interaction",
     "type": "enum",
     "storageType": "string",
@@ -6650,7 +6650,7 @@
     ]
   },
   {
-    "id": 193,
+    "id": 194,
     "name": "bevy_ui::ui_node::CalculatedClip",
     "type": "class",
     "useAs": [
@@ -6860,7 +6860,7 @@
     ]
   },
   {
-    "id": 84,
+    "id": 85,
     "name": "bevy_ui::ui_node::ZIndex",
     "type": "class",
     "useAs": [
@@ -6877,7 +6877,7 @@
     ]
   },
   {
-    "id": 178,
+    "id": 179,
     "name": "bevy_ui::widget::button::Button",
     "type": "class",
     "useAs": [
@@ -7058,7 +7058,7 @@
     "members": []
   },
   {
-    "id": 213,
+    "id": 214,
     "name": "bevy_ui::widget::text::Text",
     "type": "class",
     "useAs": [

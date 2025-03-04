@@ -6,6 +6,9 @@ mod background;
 mod player;
 mod camera;
 mod tiles;
+mod animator;
+mod enemy;
+mod game_layer;
 
 fn main() {
     App::new()
@@ -16,7 +19,9 @@ fn main() {
         .add_plugins(camera::CameraPlugin)
         .add_plugins(tiles::TilesPlugin)
         .add_plugins(background::BackgroundPlugin)
+        .add_plugins(animator::AnimatorPlugin)
         .add_plugins(player::PlayerPlugin)
+        .add_plugins(enemy::EnemyPlugin)
         .run();
 }
 

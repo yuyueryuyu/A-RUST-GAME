@@ -9,19 +9,22 @@ mod tiles;
 mod animator;
 mod enemy;
 mod game_layer;
+mod damagable;
+mod input;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
-        .add_plugins(WorldInspectorPlugin::new())
+        //.add_plugins(WorldInspectorPlugin::new())
         .add_plugins(PhysicsPlugins::default())
-        .add_plugins(PhysicsDebugPlugin::default())
+        //.add_plugins(PhysicsDebugPlugin::default())
         .add_plugins(camera::CameraPlugin)
         .add_plugins(tiles::TilesPlugin)
         .add_plugins(background::BackgroundPlugin)
         .add_plugins(animator::AnimatorPlugin)
         .add_plugins(player::PlayerPlugin)
         .add_plugins(enemy::EnemyPlugin)
+        .add_plugins(damagable::DamagePlugin)
         .run();
 }
 

@@ -49,8 +49,22 @@ pub struct AnimationState {
     pub last_index: usize,
     pub transitions: Vec<Transition>,
     pub loop_animation: bool,
-    pub on_enter: Option<fn(&mut Animator)>, // 进入状态时的回调
-    pub on_exit: Option<fn(&mut Animator)>,  // 退出状态时的回调
+    pub on_enter: Option<fn(&mut Commands, Entity, &mut Animator)>, // 进入状态时的回调
+    pub on_exit: Option<fn(&mut Commands, Entity, &mut Animator)>,  // 退出状态时的回调
+}
+
+impl Default for AnimationState {
+    fn default() -> Self {
+        Self {
+            name: "".to_string(),
+            first_index: 0,
+            last_index: 0,
+            transitions: vec![],
+            loop_animation: false,
+            on_enter: None,
+            on_exit: None,
+        }
+    }
 }
 
 // Animator组件
@@ -64,9 +78,10 @@ pub struct Animator {
     last_index: usize,
     fps: u8,
     frame_timer: Timer,
-    normalized_time: f32,
+    pub normalized_time: f32,
     active_triggers: HashSet<String>, // 当前激活的trigger集合
     consumed_triggers: HashSet<String>, // 已消费的trigger集合
+    pub active_children: HashSet<Entity>,
 }
 
 impl Animator {
@@ -83,6 +98,7 @@ impl Animator {
             normalized_time: 0.0,
             active_triggers: HashSet::new(),
             consumed_triggers: HashSet::new(),
+            active_children: HashSet::new(),
         }
     }
 
@@ -94,6 +110,10 @@ impl Animator {
             self.current_state = name.clone();
         }
         self.states.insert(name, state);
+    }
+
+    pub fn get_state(&self, state_name: &str) -> &AnimationState {
+        self.states.get(state_name).expect("don't have this state")
     }
 
     // 设置初始状态
@@ -166,6 +186,10 @@ impl Animator {
         0.0
     }
 
+    pub fn push_active_child(&mut self, entity: Entity) {
+        self.active_children.insert(entity);
+    }
+
     // 设置Trigger参数
     pub fn set_trigger(&mut self, name: &str) {
         if let Some(param) = self.parameters.get_mut(name) {
@@ -174,6 +198,10 @@ impl Animator {
                 self.active_triggers.insert(name.to_string());
             }
         }
+    }
+
+    pub fn is_active(&mut self, name: &str) -> bool {
+        self.active_triggers.contains(name)
     }
 
     // 重置Trigger
@@ -234,7 +262,7 @@ impl Animator {
     }
 
     // 更新动画状态
-    pub fn update(&mut self, delta: Duration, atlas: &mut TextureAtlas) {
+    pub fn update(&mut self, mut commands: &mut Commands, entity: Entity, delta: Duration, atlas: &mut TextureAtlas) {
 
         let target_clone = self.target_state.clone();
 
@@ -243,7 +271,7 @@ impl Animator {
 
             if let Some(state) = self.states.get(&self.current_state) {
                 if let Some(on_exit) = state.on_exit {
-                    on_exit(self);
+                    on_exit(commands, entity, self);
                 }
             }
 
@@ -260,7 +288,7 @@ impl Animator {
 
             if let Some(state) = self.states.get(&self.current_state) {
                 if let Some(on_enter) = state.on_enter {
-                    on_enter(self);
+                    on_enter(commands, entity, self);
                 }
             }
             
@@ -342,13 +370,14 @@ impl Animator {
 }
 
 fn update_animators(
+    mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(&mut Animator, &mut Sprite)>,
+    mut query: Query<(Entity, &mut Animator, &mut Sprite)>,
 ) {
-    for (mut animator, mut sprite) in &mut query {
+    for (entity, mut animator, mut sprite) in &mut query {
         // 更新动画状态机
         if let Some(atlas) = &mut sprite.texture_atlas {
-            animator.update(time.delta(), atlas);
+            animator.update(&mut commands, entity, time.delta(), atlas);
         }
 
     }
@@ -360,7 +389,7 @@ pub struct AnimatorPlugin;
 
 impl Plugin for AnimatorPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (
+        app.add_systems(PostUpdate, (
             update_animators,
         ).chain());
     }

@@ -22,7 +22,7 @@ fn setup_bg(mut commands: Commands, asset_server: Res<AssetServer>) {
             },
             ..default()
         },
-        Transform::from_xyz(0.0, 0.0, -2.5),
+        Transform::from_xyz(0.0, 0.0, -2.5).with_scale(Vec3::new(1.8, 1.8, 1.)),
         Background {
             starting_position: Vec2::ZERO,
             starting_z: -1.5
@@ -39,7 +39,7 @@ fn setup_bg(mut commands: Commands, asset_server: Res<AssetServer>) {
             },
             ..default()
         },
-        Transform::from_xyz(0.0, 0.0, -1.5),
+        Transform::from_xyz(0.0, 0.0, -1.5).with_scale(Vec3::new(1.8, 1.8, 1.)),
         Background {
             starting_position: Vec2::ZERO,
             starting_z: -0.9
@@ -56,7 +56,7 @@ fn setup_bg(mut commands: Commands, asset_server: Res<AssetServer>) {
             },
             ..default()
         },
-        Transform::from_xyz(0.0, 0.0, -1.0),
+        Transform::from_xyz(0.0, 0.0, -1.0).with_scale(Vec3::new(1.8, 1.8, 1.)),
         Background {
             starting_position: Vec2::ZERO,
             starting_z: -0.3

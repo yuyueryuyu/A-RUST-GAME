@@ -1,12 +1,16 @@
 use bevy::prelude::*;
 use std::collections::HashMap;
 
-const PARAMETERS_INITIALS: [(&str, ValueType); 5] = [
+const PARAMETERS_INITIALS: [(&str, ValueType); 9] = [
     ("is_moving", ValueType::Boolean(false)),
     ("is_grounded", ValueType::Boolean(true)),
     ("is_on_wall", ValueType::Boolean(false)),
     ("is_on_ceiling", ValueType::Boolean(false)),
     ("facing_direction", ValueType::Float(1.0)),
+    ("is_noticing", ValueType::Boolean(false)),
+    ("noticed", ValueType::Boolean(false)),
+    ("is_attacking", ValueType::Boolean(false)),
+    ("impulse_x", ValueType::Float(0.)),
 ];
 
 enum ValueType {

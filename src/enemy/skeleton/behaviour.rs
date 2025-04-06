@@ -1,10 +1,11 @@
-use avian2d::prelude::*;
-use big_brain::prelude::*;
-use bevy::prelude::*;
+use crate::animator::*;
 use crate::enemy::skeleton::Skeleton;
 use crate::player::Player;
-use crate::enemy::skeleton::Parameters;
-use crate::animator::*;
+use bevy::prelude::*;
+use bevy_tnua::builtins::*;
+use bevy_tnua::math::*;
+use bevy_tnua::prelude::*;
+use big_brain::prelude::*;
 
 const WALK_SPEED: f32 = 20.0;
 const NOTICED_SPEED: f32 = 40.0;
@@ -28,16 +29,20 @@ pub struct Notice {
 
 impl Notice {
     pub fn new(notice: f32, add_per_sec: f32, sub_per_sec: f32) -> Self {
-        Self { notice, add_per_sec, sub_per_sec }
+        Self {
+            notice,
+            add_per_sec,
+            sub_per_sec,
+        }
     }
 }
 
-pub fn notice_system(
-    time: Res<Time>,
-    mut query: Query<(&mut Notice, &Parameters), With<Skeleton>>
-) {
-    for (mut notice, param) in &mut query {
-        if param.get_bool("is_noticing") {
+pub fn notice_system(time: Res<Time>, mut query: Query<(&mut Notice, &Animator), With<Skeleton>>) {
+    for (mut notice, animator) in &mut query {
+        if animator.is_active("hit") {
+            notice.notice = 100.;
+        }
+        if animator.get_bool("is_noticing") {
             notice.notice += notice.add_per_sec * time.delta_secs();
         } else {
             notice.notice -= notice.sub_per_sec * time.delta_secs();
@@ -60,28 +65,58 @@ const MAX_DISTANCE: f32 = 30.;
 
 pub fn move_to_player_action_system(
     player_pos: Single<&Transform, With<Player>>,
-    mut actor_query: Query<(&Transform, &mut LinearVelocity, &mut Parameters, &Animator, &Notice), Without<Player>>,
+    mut actor_query: Query<
+        (
+            &Transform,
+            &mut TnuaController,
+            &mut Animator,
+            &Notice,
+        ),
+        Without<Player>,
+    >,
     mut action_query: Query<(&Actor, &mut ActionState, &MoveToPlayer, &ActionSpan)>,
 ) {
-
     for (Actor(actor), mut action_state, _move_to, span) in &mut action_query {
         let _guard = span.span().enter();
-        let (actor_pos, mut actor_v, mut params, animator, notice) = actor_query.get_mut(*actor).expect("actor has no position");
+        let (actor_pos, mut controller, mut animator, notice) =
+            actor_query.get_mut(*actor).expect("actor has no position");
         match *action_state {
             ActionState::Requested => {
                 *action_state = ActionState::Executing;
             }
             ActionState::Executing => {
                 let delta = (player_pos.translation - actor_pos.translation).truncate();
-                let facing_direction = if delta.x.trunc() > 0. {1.} else if delta.x.trunc() < 0. {-1.} else {0.};
+                let facing_direction = if delta.x.trunc() > 0. {
+                    1.
+                } else if delta.x.trunc() < 0. {
+                    -1.
+                } else {
+                    0.
+                };
                 if facing_direction != 0. {
-                    params.set_float("facing_direction", facing_direction);
+                    animator.set_float("facing_direction", facing_direction);
                 }
                 let distance = delta.length();
 
                 if distance > MAX_DISTANCE {
-                    actor_v.x = get_speed(&animator, &notice) * facing_direction;
+                    let vx = get_speed(&animator, &notice) * facing_direction;
+                    controller.basis(TnuaBuiltinWalk {
+                        desired_velocity: Vec3::new(vx, 0., 0.),
+                        float_height: 18.,
+                        air_acceleration: 600.,
+                        acceleration: 600.,
+                        max_slope: float_consts::FRAC_PI_4,
+                        ..Default::default()
+                    });
                 } else {
+                    controller.basis(TnuaBuiltinWalk {
+                        desired_velocity: Vec3::new(0., 0., 0.),
+                        float_height: 18.,
+                        air_acceleration: 600.,
+                        acceleration: 600.,
+                        max_slope: float_consts::FRAC_PI_4,
+                        ..Default::default()
+                    });
                     *action_state = ActionState::Success;
                 }
             }
@@ -104,7 +139,9 @@ pub fn attack_action_system(
     for (Actor(actor), mut state, _attack, span) in &mut query {
         let _guard = span.span().enter();
 
-        let (actor_pos, mut animator) = enemy_query.get_mut(*actor).expect("actor did't have notice");
+        let (actor_pos, mut animator) = enemy_query
+            .get_mut(*actor)
+            .expect("actor did't have notice");
 
         match *state {
             ActionState::Requested => {
@@ -133,7 +170,7 @@ pub fn attack_action_system(
 #[derive(Clone, Component, Debug, ScorerBuilder)]
 pub struct NoticeScorer;
 
-pub fn thirsty_scorer_system(
+pub fn notice_scorer_system(
     notices: Query<&Notice>,
     mut query: Query<(&Actor, &mut Score), With<NoticeScorer>>,
 ) {
@@ -148,24 +185,41 @@ pub fn thirsty_scorer_system(
 pub struct Patrol;
 
 pub fn patrol_action_system(
-    mut enemy_query: Query<(&mut LinearVelocity, &mut Parameters, &Animator, &Notice), Without<Player>>,
+    mut enemy_query: Query<
+        (
+            &mut TnuaController,
+            &mut Animator,
+            &Notice,
+        ),
+        Without<Player>,
+    >,
     mut query: Query<(&Actor, &mut ActionState, &Patrol, &ActionSpan)>,
 ) {
     for (Actor(actor), mut state, _patrol, span) in &mut query {
         let _guard = span.span().enter();
 
-        let (mut actor_v, mut params, animator, notice) = enemy_query.get_mut(*actor).expect("actor did't have notice");
+        let (mut controller, mut animator, notice) = enemy_query
+            .get_mut(*actor)
+            .expect("actor did't have notice");
 
         match *state {
             ActionState::Requested => {
                 *state = ActionState::Executing;
             }
             ActionState::Executing => {
-                let facing_direction = params.get_float("facing_direction");
-                if params.get_bool("is_on_wall") && params.get_bool("is_grounded") {
-                    params.set_float("facing_direction", -facing_direction);
+                let facing_direction = animator.get_float("facing_direction");
+                if animator.get_bool("is_on_wall") && animator.get_bool("is_grounded") {
+                    animator.set_float("facing_direction", -facing_direction);
                 }
-                actor_v.x = facing_direction * get_speed(&*animator, &notice);
+                let vx = facing_direction * get_speed(&*animator, &notice);
+                controller.basis(TnuaBuiltinWalk {
+                    desired_velocity: Vec3::new(vx, 0., 0.),
+                    float_height: 18.,
+                    air_acceleration: 600.,
+                    acceleration: 600.,
+                    max_slope: float_consts::FRAC_PI_4,
+                    ..Default::default()
+                });
                 *state = ActionState::Success;
             }
             ActionState::Cancelled => {
@@ -187,5 +241,24 @@ pub fn patrol_scorer_system(
         if let Ok(notice) = notices.get(*actor) {
             score.set(1. - notice.notice / 100.);
         }
+    }
+}
+
+pub struct SkeletonBehaviourPlugin;
+
+impl Plugin for SkeletonBehaviourPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(BigBrainPlugin::new(PreUpdate));
+        app.add_systems(Update, notice_system);
+        app.add_systems(
+            PreUpdate,
+            (
+                attack_action_system,
+                move_to_player_action_system,
+                patrol_action_system,
+            )
+                .in_set(BigBrainSet::Actions),
+        );
+        app.add_systems(First, (notice_scorer_system, patrol_scorer_system));
     }
 }

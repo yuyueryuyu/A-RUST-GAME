@@ -200,7 +200,7 @@ impl Animator {
         }
     }
 
-    pub fn is_active(&mut self, name: &str) -> bool {
+    pub fn is_active(&self, name: &str) -> bool {
         self.active_triggers.contains(name)
     }
 
@@ -262,7 +262,7 @@ impl Animator {
     }
 
     // 更新动画状态
-    pub fn update(&mut self, mut commands: &mut Commands, entity: Entity, delta: Duration, atlas: &mut TextureAtlas) {
+    pub fn update(&mut self, commands: &mut Commands, entity: Entity, delta: Duration, atlas: &mut TextureAtlas) {
 
         let target_clone = self.target_state.clone();
 

@@ -1,10 +1,38 @@
+use bevy_tnua::math::*;
+
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
+use bevy_tnua::prelude::*;
+use bevy_tnua::builtins::*;
 
 use crate::animator::Animator;
-use crate::player::get_speed;
+use crate::damagable::Damagable;
+use crate::items::ItemList;
 use crate::player::Player;
+
+const WALK_SPEED: f32 = 80.0;
+const RUN_SPEED: f32 = 120.0;
+const MOVE_ACC: f32 = 600.0;
+const CROUCH_SPEED: f32 = 50.0;
+const SLIDE_SPEED: f32 = 400.0;
+const SLIDE_ACC: f32 = 400.0;
+const JUMP_IMPULSE: f32 = 600.0;
+
+pub fn get_speed(animator: &Animator) -> f32 {
+    if animator.get_bool("can_move") {
+        if animator.get_bool("is_moving") {
+            if animator.get_bool("is_crouching") {
+                return CROUCH_SPEED;
+            }
+            if animator.get_bool("is_running") {
+                return RUN_SPEED;
+            }
+            return WALK_SPEED;
+        }
+    }
+    0.0
+}
 
 /** 键盘输入模块 */
 #[derive(Bundle)]
@@ -22,7 +50,7 @@ impl Default for PlayerInputBundle {
 
 /** 设置默认键位 */
 impl PlayerInputBundle {
-    pub fn default_input_map() -> InputMap<Action> {
+    fn default_input_map() -> InputMap<Action> {
         let mut input_map = InputMap::default();
 
         input_map.insert(Action::Up, KeyCode::KeyW);
@@ -33,7 +61,8 @@ impl PlayerInputBundle {
         input_map.insert(Action::Run, KeyCode::ShiftLeft);
         input_map.insert(Action::Crouch, KeyCode::KeyC);
         input_map.insert(Action::Attack, MouseButton::Left);
-
+        input_map.insert(Action::Defense, MouseButton::Right);
+        input_map.insert(Action::UseItem, KeyCode::KeyR);
         input_map
     }
 }
@@ -49,6 +78,8 @@ enum Action {
     Jump,
     Crouch,
     Attack,
+    Defense,
+    UseItem,
 }
 
 /** 每个动作对应的一些实用方法 */
@@ -67,17 +98,18 @@ impl Action {
 }
 
 fn on_move(
-    mut player: Single<
+    player: Single<
         (
             &ActionState<Action>,
-            &mut LinearVelocity,
+            &LinearVelocity,
             &mut Transform,
             &mut Animator,
+            &mut TnuaController,
         ),
         With<Player>,
     >,
 ) {
-    let (action_state, mut vel, mut transform, mut animator) = player.into_inner();
+    let (action_state, vel, mut transform, mut animator, mut controller) = player.into_inner();
 
     let mut direction_vector = Vec2::ZERO;
 
@@ -108,13 +140,19 @@ fn on_move(
 
     // Set parameters
     animator.set_bool("is_moving", is_moving);
-    if !animator.get_bool("is_on_wall") {
-        vel.x = direction_vector.x * get_speed(&*animator);
-        animator.set_float("velocity_y", vel.y);
-    }
+    animator.set_float("velocity_y", vel.y);
+    
+    controller.basis(TnuaBuiltinWalk {
+        desired_velocity: Vec3::new(direction_vector.x , direction_vector.y, 0.)* get_speed(&*animator),
+        float_height: 18.,
+        air_acceleration: MOVE_ACC,
+        acceleration: MOVE_ACC,
+        max_slope: float_consts::FRAC_PI_4,
+        ..Default::default()
+    });
 }
 
-fn on_crouch(mut player: Single<(&ActionState<Action>, &mut Animator), With<Player>>) {
+fn on_crouch(player: Single<(&ActionState<Action>, &mut Animator), With<Player>>) {
     let (action_state, mut animator) = player.into_inner();
     if action_state.just_pressed(&Action::Crouch) {
         let crouching = animator.get_bool("is_crouching");
@@ -123,36 +161,46 @@ fn on_crouch(mut player: Single<(&ActionState<Action>, &mut Animator), With<Play
 }
 
 fn on_jump(
-    mut player: Single<(&ActionState<Action>, &mut LinearVelocity, &mut Animator), With<Player>>,
+    player: Single<(&ActionState<Action>, &mut TnuaController, &mut Animator), With<Player>>,
 ) {
-    let (action_state, mut vel, mut animator) = player.into_inner();
+    let (action_state, mut controller, mut animator) = player.into_inner();
     if action_state.just_pressed(&Action::Jump)
-        && animator.get_bool("is_grounded")
         && animator.get_bool("can_move")
     {
         animator.set_trigger("jump");
-        vel.y = 200.;
+        controller.action(TnuaBuiltinJump {
+            height: JUMP_IMPULSE,
+            ..Default::default()
+        });
     }
 }
 
-fn on_run(mut player: Single<(&ActionState<Action>, &mut Animator), With<Player>>) {
+fn on_run(player: Single<(&ActionState<Action>, &mut Animator), With<Player>>) {
     let (action_state, mut animator) = player.into_inner();
     let is_running = action_state.pressed(&Action::Run);
     animator.set_bool("is_running", is_running);
 }
 
-fn on_attack(mut player: Single<(&ActionState<Action>, &mut Animator), With<Player>>) {
+fn on_attack(player: Single<(&ActionState<Action>, &mut Animator), With<Player>>) {
     let (action_state, mut animator) = player.into_inner();
     if action_state.just_pressed(&Action::Attack) {
         animator.set_trigger("attack");
     }
 }
 
+fn on_defense(player: Single<(&ActionState<Action>, &mut Animator, &mut Damagable), With<Player>>) {
+    let (action_state, mut animator, mut damagable) = player.into_inner();
+    if action_state.just_pressed(&Action::Defense) {
+        animator.set_trigger("defense");
+        damagable.set_defending(true);
+    }
+}
+
 fn on_slide(
     time: Res<Time>,
-    mut player: Single<(&ActionState<Action>, &mut Animator), With<Player>>,
+    player: Single<(&ActionState<Action>, &mut Animator, &mut TnuaController), With<Player>>,
 ) {
-    let (action_state, mut animator) = player.into_inner();
+    let (action_state, mut animator, mut controller) = player.into_inner();
     if action_state.pressed(&Action::Run) {
         let shift_press_time = animator.get_float("shift_press_time");
         animator.set_float("shift_press_time", shift_press_time + time.delta_secs());
@@ -161,29 +209,30 @@ fn on_slide(
         let shift_press_time = animator.get_float("shift_press_time");
         if shift_press_time <= 0.4 {
             animator.set_trigger("slide");
-            let dir = if animator.get_bool("is_facing_right") {
-                1.0
+            let facing_direction = if animator.get_bool("is_facing_right") {
+                1.
             } else {
-                -1.0
+                -1.
             };
-            animator.set_float("impulse_x", 600.);
+            controller.action(TnuaBuiltinDash {
+                displacement: Vec3::new(50., 0., 0.)* facing_direction ,
+                speed: SLIDE_SPEED,
+                acceleration: SLIDE_ACC,
+                brake_acceleration: SLIDE_ACC,
+                ..Default::default()
+            });
         }
         animator.set_float("shift_press_time", 0.0);
     }
 }
 
-fn apply_impulse_x(mut query: Query<(&mut LinearVelocity, &mut Animator), With<Player>>) {
-    for (mut v, mut animator) in &mut query {
-        let mut vx = animator.get_float("impulse_x");
-        if vx.abs() > 0. {
-            v.x = vx;
-            if vx > 0. {
-                vx -= 60.;
-            } else {
-                vx += 60.;
-            }
-            animator.set_float("impulse_x", vx);
-        }
+fn on_use(
+    player: Single<(Entity, &ActionState<Action>, &mut Animator, &mut ItemList), With<Player>>,
+) {
+    let (entity, action_state, mut animator, mut item_list) = player.into_inner();
+    if action_state.just_pressed(&Action::UseItem) {
+        item_list.use_item(entity);
+        animator.set_trigger("items");
     }
 }
 
@@ -201,9 +250,9 @@ impl Plugin for PlayerInputPlugin {
                 on_crouch,
                 on_attack,
                 on_slide,
-                apply_impulse_x,
+                on_defense,
+                on_use,
             )
-                .chain(),
         );
     }
 }

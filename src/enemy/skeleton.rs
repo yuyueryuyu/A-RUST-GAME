@@ -5,13 +5,11 @@ use std::collections::HashSet;
 
 use crate::animator::Condition;
 use crate::animator::*;
-use crate::game_layer::GameLayer;
-use crate::player::Player;
+use crate::controller::ControllerBundle;
 use crate::damagable::Damagable;
-
-mod parameters;
-use parameters::Parameters;
-
+use crate::game_layer::GameLayer;
+use crate::physics::PhysicsBundle;
+use crate::player::Player;
 mod behaviour;
 use behaviour::*;
 
@@ -25,7 +23,7 @@ fn setup_enemy(
 ) {
     let texture =
         asset_server.load("Art/Monster_Creatures_Fantasy(Version 1.3)/Skeleton_sheet.png");
-    let layout = TextureAtlasLayout::from_grid(UVec2::new(150, 150), 7, 6, None, None);
+    let layout = TextureAtlasLayout::from_grid(UVec2::new(150, 150), 6, 7, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
     spawn_enemy(
@@ -48,10 +46,15 @@ fn spawn_enemy(
     texture: Handle<Image>,
     texture_atlas_layout: Handle<TextureAtlasLayout>,
 ) {
-    let animator = setup_animator(commands);
-    let param = Parameters::new();
-    let collider_layer =
-        CollisionLayers::new(GameLayer::Enemy, [GameLayer::Default, GameLayer::Ground, GameLayer::PlayerHitBox]);
+    let animator = setup_animator();
+    let collider_layer = CollisionLayers::new(
+        GameLayer::Enemy,
+        [
+            GameLayer::Default,
+            GameLayer::Ground,
+            GameLayer::PlayerHitBox,
+        ],
+    );
     let move_and_attack = Steps::build()
         .label("MoveAndAttack")
         .step(MoveToPlayer)
@@ -74,26 +77,25 @@ fn spawn_enemy(
             }),
             ..default()
         },
-        Skeleton,
-        Transform::from_xyz(position.x, position.y, 0.0).with_scale(Vec3::new(0.7, 0.7, 0.7)),
-        (
-            RigidBody::Dynamic,
-            LockedAxes::ROTATION_LOCKED,
-            SweptCcd::default(),
-            Mass(1.0),
-            LinearVelocity::default(),
-            GravityScale(30.0),
-            Collider::capsule_endpoints(10.0, Vec2::Y * 16.0, Vec2::NEG_Y * 16.0),
-            CollisionMargin(0.1),
-            collider_layer,
+        Transform::from_xyz(position.x, position.y, 0.0).with_scale(
+            Vec3::new(0.7, 0.7, 0.7)
         ),
+        Skeleton,
+        ControllerBundle::new(14.),
+        PhysicsBundle {
+            collider: Collider::capsule_endpoints(
+                10.0, 
+                Vec2::Y * 16.0, 
+                Vec2::NEG_Y * 16.0
+            ),
+            layer: collider_layer,
+            ..default()
+        },
         Damagable::new(100.),
         animator,
-        param,
-        Notice::new(0.0, 50.0, 10.0), 
+        Notice::new(0.0, 50.0, 10.0),
         thinker,
     ));
-    
 }
 
 #[derive(Component)]
@@ -118,16 +120,14 @@ impl AnimationType {
             Self::Attack3 => (16, 21),
             Self::Death => (22, 25),
             Self::Idle => (26, 29),
-            Self::Hurt => (30, 33),
-            Self::Sheild => (34, 37),
+            Self::Sheild => (30, 33),
+            Self::Hurt => (34, 37),
             Self::Walk => (38, 41),
         }
     }
 }
 
-fn setup_animator(
-    commands: &mut Commands,
-) -> Animator {
+fn setup_animator() -> Animator {
     let idle_state = AnimationState {
         name: "Idle".to_string(),
         first_index: AnimationType::Idle.config_index().0,
@@ -155,7 +155,7 @@ fn setup_animator(
             },
             Transition {
                 conditions: vec![Condition {
-                    param_name: "hurt".to_string(),
+                    param_name: "hit".to_string(),
                     operator: ConditionOperator::Equals,
                     value: AnimatorParam::Trigger(true),
                 }],
@@ -205,7 +205,7 @@ fn setup_animator(
             },
             Transition {
                 conditions: vec![Condition {
-                    param_name: "hurt".to_string(),
+                    param_name: "hit".to_string(),
                     operator: ConditionOperator::Equals,
                     value: AnimatorParam::Trigger(true),
                 }],
@@ -232,22 +232,34 @@ fn setup_animator(
         name: "AttackPrep".to_string(),
         first_index: AnimationType::AttackPrep.config_index().0,
         last_index: AnimationType::AttackPrep.config_index().1,
-        transitions: vec![Transition {
-            conditions: vec![],
-            target_state: "Attack".to_string(),
-            has_exit_time: true,
-            exit_time: 1.0,
-        },
-        Transition {
-            conditions: vec![Condition {
-                param_name: "is_alive".to_string(),
-                operator: ConditionOperator::Equals,
-                value: AnimatorParam::Bool(false),
-            }],
-            target_state: "Death".to_string(),
-            has_exit_time: false,
-            exit_time: 0.0,
-        }],
+        transitions: vec![
+            Transition {
+                conditions: vec![],
+                target_state: "Attack".to_string(),
+                has_exit_time: true,
+                exit_time: 1.0,
+            },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "is_alive".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Bool(false),
+                }],
+                target_state: "Death".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "hit".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Trigger(true),
+                }],
+                target_state: "Hurt".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
+        ],
         loop_animation: false,
         on_enter: Some(set_cant_move),
         on_exit: None,
@@ -258,22 +270,34 @@ fn setup_animator(
         name: "Attack".to_string(),
         first_index: AnimationType::Attack.config_index().0,
         last_index: AnimationType::Attack.config_index().1,
-        transitions: vec![Transition {
-            conditions: vec![],
-            target_state: "Idle".to_string(),
-            has_exit_time: true,
-            exit_time: 1.0,
-        },
-        Transition {
-            conditions: vec![Condition {
-                param_name: "is_alive".to_string(),
-                operator: ConditionOperator::Equals,
-                value: AnimatorParam::Bool(false),
-            }],
-            target_state: "Death".to_string(),
-            has_exit_time: false,
-            exit_time: 0.0,
-        }],
+        transitions: vec![
+            Transition {
+                conditions: vec![],
+                target_state: "Idle".to_string(),
+                has_exit_time: true,
+                exit_time: 1.0,
+            },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "is_alive".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Bool(false),
+                }],
+                target_state: "Death".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "hit".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Trigger(true),
+                }],
+                target_state: "Hurt".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
+        ],
         loop_animation: false,
         on_enter: Some(set_attack),
         on_exit: Some(set_not_attack),
@@ -310,10 +334,15 @@ fn setup_animator(
     let mut animator = Animator::new();
     animator.add_parameter("is_moving", AnimatorParam::Bool(false));
     animator.add_parameter("can_move", AnimatorParam::Bool(true));
-    animator.add_parameter("is_attacking", AnimatorParam::Bool(false));
     animator.add_parameter("attack", AnimatorParam::Trigger(false));
     animator.add_parameter("is_alive", AnimatorParam::Bool(true));
     animator.add_parameter("hit", AnimatorParam::Trigger(false));
+    animator.add_parameter("is_grounded", AnimatorParam::Bool(true));
+    animator.add_parameter("is_on_wall", AnimatorParam::Bool(false));
+    animator.add_parameter("is_on_ceiling", AnimatorParam::Bool(false));
+    animator.add_parameter("facing_direction", AnimatorParam::Float(1.0));
+    animator.add_parameter("is_noticing", AnimatorParam::Bool(false));
+    animator.add_parameter("noticed", AnimatorParam::Bool(false));
 
     animator.add_state(idle_state);
     animator.add_state(walk_state);
@@ -332,55 +361,55 @@ fn setup_animator(
     animator
 }
 
-fn set_not_attack(mut commands: &mut Commands, entity: Entity, animator: &mut Animator) {
+fn set_not_attack(commands: &mut Commands, _entity: Entity, animator: &mut Animator) {
     animator.set_bool("can_move", true);
-    animator.set_bool("is_attacking", false);
     for child in animator.active_children.iter() {
         commands.entity(*child).despawn_recursive();
     }
 
     animator.active_children = HashSet::new();
-    
 }
 
-fn set_attack(mut commands: &mut Commands, entity: Entity, animator: &mut Animator) {
-    animator.set_bool("is_attacking", true);
-    let collider_layer =
-        CollisionLayers::new(GameLayer::EnemyHitBox, [GameLayer::Player]);
-    let id = commands.spawn((
-        Collider::rectangle(30., 10.),
-        Transform::from_xyz(30., 0., 0.),
-        Sensor,
-        collider_layer,
-    )).set_parent(entity).id();
+fn set_attack(commands: &mut Commands, entity: Entity, animator: &mut Animator) {
+    animator.set_bool("can_move", false);
+    let collider_layer = CollisionLayers::new(GameLayer::EnemyHitBox, [GameLayer::Player]);
+    let id = commands
+        .spawn((
+            Collider::rectangle(30., 10.),
+            Transform::from_xyz(30., 0., 0.),
+            Sensor,
+            collider_layer,
+        ))
+        .set_parent(entity)
+        .id();
     animator.push_active_child(id);
 }
 
-fn set_can_move(mut commands: &mut Commands, entity: Entity, animator: &mut Animator) {
+fn _set_can_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator) {
     animator.set_bool("can_move", true);
-    
 }
 
-fn set_cant_move(mut commands: &mut Commands, entity: Entity, animator: &mut Animator) {
+fn set_cant_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator) {
     animator.set_bool("can_move", false);
 }
 
 fn check_contact(
     spatial_query: SpatialQuery,
-    mut query: Query<(&Transform, &mut Parameters, &Collider), With<Skeleton>>,
+    mut query: Query<(&Transform, &mut Animator, &Collider), With<Skeleton>>,
     entity: Single<Entity, With<Player>>,
 ) {
     let collider_notice = Collider::rectangle(1., 20.);
-    for (transform, mut param, collider) in &mut query {
+
+    for (transform, mut animator, collider) in &mut query {
         let origin = Vec2::new(transform.translation.x, transform.translation.y);
         let rotation = transform.rotation.z;
-        let direction_x = if param.get_float("facing_direction") > 0.0 {
+        let direction_x = if animator.get_float("facing_direction") > 0.0 {
             Dir2::X
         } else {
             Dir2::NEG_X
         };
         let max_distance_y = 0.2;
-        let max_distance_x = 0.5;
+        let max_distance_x = 10.;
         let max_distance_notice = 100.;
         let max_hits = 1;
 
@@ -428,85 +457,33 @@ fn check_contact(
             &notice_filter,
         );
 
-        param.set_bool("is_grounded", hits_ground.len() > 0);
-        param.set_bool("is_on_wall", hits_wall.len() > 0);
-        param.set_bool("is_on_ceiling", hits_ceiling.len() > 0);
+        animator.set_bool("is_grounded", hits_ground.len() > 0);
+        animator.set_bool("is_on_wall", hits_wall.len() > 0);
+        animator.set_bool("is_on_ceiling", hits_ceiling.len() > 0);
         if let Some(noticed_entity) = hits_notice.get(0) {
-            param.set_bool(
+            animator.set_bool(
                 "is_noticing",
                 noticed_entity.entity.to_bits() == entity.to_bits(),
             );
         } else {
-            param.set_bool("is_noticing", false);
+            animator.set_bool("is_noticing", false);
         }
     }
 }
 
-fn on_flip_direction(mut query: Query<(&mut Transform, &Parameters), With<Skeleton>>) {
-    for (mut transform, param) in &mut query {
-        let facing_direction = param.get_float("facing_direction");
+fn on_flip_direction(mut query: Query<(&mut Transform, &Animator), With<Skeleton>>) {
+    for (mut transform, animator) in &mut query {
+        let facing_direction = animator.get_float("facing_direction");
         if transform.scale.x * facing_direction < 0. {
             transform.scale.x *= -1.;
         }
     }
 }
 
-fn on_move(
-    mut query: Query<(&LinearVelocity, &mut Parameters, &mut Animator), With<Skeleton>>,
-) {
-    // Then reconvert at the end, normalizing the magnitude
-    for (vel, mut param, mut animator) in query.iter_mut() {
+fn on_move(mut query: Query<(&LinearVelocity, &mut Animator), With<Skeleton>>) {
+    for (vel, mut animator) in query.iter_mut() {
         let is_moving = vel.x != 0.;
-
-        param.set_bool("is_moving", is_moving);
         animator.set_bool("is_moving", is_moving);
-    }
-}
-
-fn print_hits(mut query: Query<(&mut Parameters, &ShapeHits)>) {
-    for (mut param, hits) in &mut query {
-        param.set_bool("is_noticing", hits.len() > 0);
-    }
-}
-
-fn apply_impulse_x(mut query: Query<(&mut LinearVelocity, &mut Parameters), With<Skeleton>>) {
-    for (mut v, mut params) in &mut query {
-        let mut vx = params.get_float("impulse_x");
-        if vx.abs() > 0. {
-            v.x = vx;
-            if vx > 0. {
-                vx -= 50.;
-            } else {
-                vx += 50.;
-            }
-            params.set_float("impulse_x", vx);
-        }
-    }
-}
-
-fn check_hitbox(
-    collisions: Res<Collisions>,
-    mut query: Query<(Entity, &Transform), With<Sensor>>,
-    mut actor_query: Query<(Entity, &mut Damagable, &mut Animator, &Transform, &mut Parameters), With<Skeleton>>,
-) {
-    for (entity, transform) in &query {
-        for (aentity, mut damagable, mut animator, atransform, mut params) in &mut actor_query {
-            if collisions.contains(aentity, entity) || collisions.contains(entity, aentity){
-                let dir = if (atransform.translation - transform.translation).x >= 0. {
-                    -1.
-                } else {
-                    1.
-                };
-                if !damagable.is_invincible {
-                    params.set_float("impulse_x", dir * 100.);
-                    animator.set_trigger("hit");
-                }
-                damagable.take_hit(40.);
-                println!("EnemyHealth:{}",damagable.health);
-                
-            }
-        }
-
     }
 }
 
@@ -514,22 +491,15 @@ pub struct SkeletonPlugin;
 
 impl Plugin for SkeletonPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(BigBrainPlugin::new(PreUpdate));
-        app.add_systems(Update, notice_system);
-        app.add_systems(
-            PreUpdate,
-            (
-                attack_action_system,
-                move_to_player_action_system,
-                patrol_action_system,
-            )
-                .in_set(BigBrainSet::Actions),
-        );
-        app.add_systems(First, (thirsty_scorer_system, patrol_scorer_system));
+        app.add_plugins(SkeletonBehaviourPlugin);
         app.add_systems(Startup, setup_enemy);
         app.add_systems(
             FixedUpdate,
-            (check_contact, on_move, on_flip_direction, print_hits, check_hitbox, apply_impulse_x),
+            (
+                check_contact,
+                on_move,
+                on_flip_direction,
+            ),
         );
     }
 }

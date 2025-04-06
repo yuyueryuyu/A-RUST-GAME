@@ -475,6 +475,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy-tnua"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8a5783db12b6f927e7cc9976c15e23fd5b107319a9c1be8b92622fa10b94a62"
+dependencies = [
+ "bevy",
+ "bevy-tnua-physics-integration-layer",
+ "thiserror",
+]
+
+[[package]]
+name = "bevy-tnua-avian2d"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db79b2e065eaef2b891ec9bf633233bd4c522d0ca1289feb9af18c82dd8b95a5"
+dependencies = [
+ "avian2d",
+ "bevy",
+ "bevy-tnua-physics-integration-layer",
+]
+
+[[package]]
+name = "bevy-tnua-physics-integration-layer"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fbe99d25b7253cb99a00f69fe9accc875645b4ecf9910bb5f24459835ff177e"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_a11y"
 version = "0.15.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -727,9 +758,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_ecs_tiled"
-version = "0.5.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1fd460467cc05c818eda6f402c54e0d776082df064a9877b3372ee2cbdbaab34"
+checksum = "c3c83101ffb04b2ade1b2996fb430bd279b38b4a55c6503b1ab2e13e49ade03b"
 dependencies = [
  "avian2d",
  "bevy",
@@ -739,7 +770,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "tiled",
+ "tiled 0.14.0",
 ]
 
 [[package]]
@@ -3230,11 +3261,14 @@ dependencies = [
  "avian2d",
  "bevy",
  "bevy-inspector-egui",
+ "bevy-tnua",
+ "bevy-tnua-avian2d",
+ "bevy-tnua-physics-integration-layer",
  "bevy_ecs_tiled",
  "bevy_ecs_tilemap",
  "big-brain",
  "leafwing-input-manager",
- "tiled",
+ "tiled 0.13.0",
 ]
 
 [[package]]
@@ -4527,6 +4561,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_regex"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8136f1a4ea815d7eac4101cfd0b16dc0cb5e1fe1b8609dfd728058656b7badf"
+dependencies = [
+ "regex",
+ "serde",
+]
+
+[[package]]
 name = "serde_spanned"
 version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4839,6 +4883,22 @@ checksum = "c7bce2748ed610d57d8963b78469cb8abe4d7c4c361c910a60d3642e381a0fc7"
 dependencies = [
  "base64 0.22.1",
  "flate2",
+ "xml-rs",
+ "zstd",
+]
+
+[[package]]
+name = "tiled"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "963ef63fa3552ead705617d9f42de2b076c48a15f780e4d1c95dd52e9362a700"
+dependencies = [
+ "base64 0.22.1",
+ "flate2",
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_regex",
  "xml-rs",
  "zstd",
 ]

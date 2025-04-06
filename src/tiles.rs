@@ -12,31 +12,32 @@ fn setup_tilesets(mut commands: Commands, asset_server: Res<AssetServer>) {
             asset_server.load("Tilemap/game.tmx"),
         ),
         Transform::from_xyz(-180.0, -160.0, 0.0),
-    )).insert(TiledMapSettings {
-        layer_z_offset: 0.1,
-        ..default()
-    });
+    )).insert(TiledMapLayerZOffset(0.1));
 }
 
-#[derive(Default)]
+#[derive(Default, Debug, Clone, Reflect)]
+#[reflect(Default, Debug)]
 struct MyCustomAvianPhysicsBackend(TiledPhysicsAvianBackend);
 
 impl TiledPhysicsBackend for MyCustomAvianPhysicsBackend {
-    fn spawn_collider(
+    fn spawn_colliders(
         &self,
         commands: &mut Commands,
-        map: &Map,
-        collider_source: &TiledColliderSource,
-    ) -> Option<TiledColliderSpawnInfos> {
-        let collider = self.0.spawn_collider(commands, map, collider_source);
+        tiled_map: &TiledMap,
+        filter: &TiledNameFilter,
+        collider: &TiledCollider,
+    ) -> Vec<TiledColliderSpawnInfos> {
+        let colliders = self
+            .0
+            .spawn_colliders(commands, tiled_map, filter, collider);
         let collider_layer = CollisionLayers::new(
             GameLayer::Ground,
             [GameLayer::Default, GameLayer::Player, GameLayer::Enemy],
         );
-        if let Some(c) = &collider {
+        for c in &colliders {
             commands.entity(c.entity).insert(RigidBody::Static).insert(collider_layer);
         }
-        collider
+        colliders
     }
 }
 

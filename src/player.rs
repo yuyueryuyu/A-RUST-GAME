@@ -1,41 +1,24 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use leafwing_input_manager::prelude::*;
+use bevy_tnua::prelude::*;
 use std::collections::HashSet;
+use std::process::CommandArgs;
 
-mod parameters;
 use crate::animator::Condition;
 use crate::animator::*;
 use crate::damagable::*;
 use crate::game_layer::GameLayer;
 use crate::input;
 use crate::input::*;
-use parameters::Parameters;
+use crate::controller::*;
+use crate::items::Item;
+use crate::items::ItemList;
+use crate::items::ItemType;
+use crate::physics::*;
 
-const WALK_SPEED: f32 = 80.0;
-const RUN_SPEED: f32 = 120.0;
-const CROUCH_SPEED: f32 = 50.0;
-const SLIDE_SPEED: f32 = 120.0;
-const JUMP_IMPULSE: f32 = 200.0;
-
+const START_POSITION: Vec3 = Vec3::new(120., 44.1, 0.0);
 #[derive(Component)]
 pub struct Player;
-
-pub fn get_speed(animator: &Animator) -> f32 {
-    if animator.get_bool("can_move") {
-        if animator.get_bool("is_moving") {
-            if animator.get_bool("is_crouching") {
-                return CROUCH_SPEED;
-            }
-            if animator.get_bool("is_running") {
-                return RUN_SPEED;
-            }
-            return WALK_SPEED;
-        }
-    }
-    0.0
-}
-
 
 fn setup_player(
     mut commands: Commands,
@@ -45,11 +28,24 @@ fn setup_player(
     let texture = asset_server.load("Art/Adventurer/adventurer-sheet.png");
     let layout = TextureAtlasLayout::from_grid(UVec2::new(50, 37), 20, 10, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
-    let param = Parameters::new();
     let animator = setup_animator();
-    let collider_layer =
-        CollisionLayers::new(GameLayer::Player, [GameLayer::Default, GameLayer::Ground, GameLayer::EnemyHitBox]);
+    let collider_layer = CollisionLayers::new(
+        GameLayer::Player,
+        [
+            GameLayer::Default,
+            GameLayer::Ground,
+            GameLayer::EnemyHitBox,
+        ],
+    );
+    let item_list = ItemList {
+        items: vec![Item::new(
+            ItemType::HealthPotion, 
+            String::from("Art/Kyrise's 16x16 RPG Icon Pack - V1.3/icons/16x16/potion_02a.png"), 5
+        )],
+        item_now: 0,
+    };
     commands.spawn((
+        Player,
         Sprite {
             image: texture,
             texture_atlas: Some(TextureAtlas {
@@ -58,20 +54,17 @@ fn setup_player(
             }),
             ..default()
         },
-        Transform::from_xyz(120., 44.1, 0.0),
-        Player,
+        Transform::from_translation(START_POSITION),
         PlayerInputBundle::default(),
-        param,
         animator,
-        (RigidBody::Dynamic,
-        LockedAxes::ROTATION_LOCKED,
-        SweptCcd::default(),
-        Mass(1.0),
-        LinearVelocity::default(),
-        GravityScale(30.0),
-        Collider::capsule_endpoints(6.0, Vec2::Y * 7.0, Vec2::NEG_Y * 11.0),
-        CollisionMargin(0.1),
-        collider_layer),
+        ControllerBundle::new(11.8),
+        PhysicsBundle {
+            collider: Collider::capsule_endpoints(6.0, Vec2::Y * 7.0, Vec2::NEG_Y * 11.0),
+            layer: collider_layer,
+            friction: Friction::new(-0.1),
+            ..default()
+        },
+        item_list,
         Damagable::new(100.),
     ));
 }
@@ -83,8 +76,12 @@ enum AnimationType {
     AirAttack3Loop,
     AirAttack3Rdy,
     AirAttack3End,
+    Attack1Prep,
     Attack1,
+    Attack1End,
+    Attack2Prep,
     Attack2,
+    Attack2End,
     Attack3,
     Bow,
     BowJump,
@@ -132,8 +129,12 @@ impl AnimationType {
             Self::AirAttack2 => (7, 9),
             Self::AirAttack3Loop => (10, 11),
             Self::AirAttack3Rdy => (12, 12),
-            Self::Attack1 => (13, 17),
-            Self::Attack2 => (18, 23),
+            Self::Attack1Prep => (13, 14),
+            Self::Attack1 => (15, 16),
+            Self::Attack1End => (17, 17),
+            Self::Attack2Prep => (18, 20),
+            Self::Attack2 => (21, 22),
+            Self::Attack2End => (23, 23),
             Self::Attack3 => (24, 29),
             Self::Bow => (30, 38),
             Self::BowJump => (39, 44),
@@ -227,7 +228,17 @@ fn setup_animator() -> Animator {
                     operator: ConditionOperator::Equals,
                     value: AnimatorParam::Trigger(true),
                 }],
-                target_state: "Attack1".to_string(),
+                target_state: "Attack1Prep".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "defense".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Trigger(true),
+                }],
+                target_state: "Defense".to_string(),
                 has_exit_time: false,
                 exit_time: 0.0,
             },
@@ -258,6 +269,16 @@ fn setup_animator() -> Animator {
                     value: AnimatorParam::Trigger(true),
                 }],
                 target_state: "Hit".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "items".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Trigger(true),
+                }],
+                target_state: "Items".to_string(),
                 has_exit_time: false,
                 exit_time: 0.0,
             },
@@ -327,7 +348,7 @@ fn setup_animator() -> Animator {
                     operator: ConditionOperator::Equals,
                     value: AnimatorParam::Trigger(true),
                 }],
-                target_state: "Attack1".to_string(),
+                target_state: "Attack1Prep".to_string(),
                 has_exit_time: false,
                 exit_time: 0.0,
             },
@@ -358,6 +379,26 @@ fn setup_animator() -> Animator {
                     value: AnimatorParam::Trigger(true),
                 }],
                 target_state: "Hit".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "defense".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Trigger(true),
+                }],
+                target_state: "Defense".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "items".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Trigger(true),
+                }],
+                target_state: "Items".to_string(),
                 has_exit_time: false,
                 exit_time: 0.0,
             },
@@ -427,7 +468,7 @@ fn setup_animator() -> Animator {
                     operator: ConditionOperator::Equals,
                     value: AnimatorParam::Trigger(true),
                 }],
-                target_state: "Attack1".to_string(),
+                target_state: "Attack1Prep".to_string(),
                 has_exit_time: false,
                 exit_time: 0.0,
             },
@@ -458,6 +499,26 @@ fn setup_animator() -> Animator {
                     value: AnimatorParam::Trigger(true),
                 }],
                 target_state: "Hit".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "defense".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Trigger(true),
+                }],
+                target_state: "Defense".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "items".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Trigger(true),
+                }],
+                target_state: "Items".to_string(),
                 has_exit_time: false,
                 exit_time: 0.0,
             },
@@ -541,6 +602,16 @@ fn setup_animator() -> Animator {
                 has_exit_time: false,
                 exit_time: 0.0,
             },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "items".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Trigger(true),
+                }],
+                target_state: "Items".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
         ],
         loop_animation: true,
         ..default()
@@ -621,6 +692,16 @@ fn setup_animator() -> Animator {
                 has_exit_time: false,
                 exit_time: 0.0,
             },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "items".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Trigger(true),
+                }],
+                target_state: "Items".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
         ],
         loop_animation: true,
         ..default()
@@ -668,6 +749,16 @@ fn setup_animator() -> Animator {
                     value: AnimatorParam::Trigger(true),
                 }],
                 target_state: "Hit".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "defense".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Trigger(true),
+                }],
+                target_state: "Defense".to_string(),
                 has_exit_time: false,
                 exit_time: 0.0,
             },
@@ -721,6 +812,16 @@ fn setup_animator() -> Animator {
                 has_exit_time: false,
                 exit_time: 0.0,
             },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "defense".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Trigger(true),
+                }],
+                target_state: "Defense".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
         ],
         loop_animation: true,
         ..default()
@@ -735,7 +836,17 @@ fn setup_animator() -> Animator {
             target_state: "Rise".to_string(),
             has_exit_time: true,
             exit_time: 1.0,
-        }],
+        },
+        Transition {
+            conditions: vec![Condition {
+                param_name: "defense".to_string(),
+                operator: ConditionOperator::Equals,
+                value: AnimatorParam::Trigger(true),
+            }],
+            target_state: "Defense".to_string(),
+            has_exit_time: false,
+            exit_time: 0.0,
+        },],
         loop_animation: false,
         ..default()
     };
@@ -751,8 +862,26 @@ fn setup_animator() -> Animator {
             exit_time: 2.0,
         }],
         loop_animation: false,
-        on_enter: Some(set_sliding),
-        on_exit: Some(set_not_sliding),
+        on_enter: Some(set_cant_move),
+        on_exit: Some(set_can_move),
+        ..default()
+    };
+
+    let attack1_prep_state = AnimationState {
+        name: "Attack1Prep".to_string(),
+        first_index: AnimationType::Attack1Prep.config_index().0,
+        last_index: AnimationType::Attack1Prep.config_index().1,
+        transitions: vec![
+            Transition {
+                conditions: vec![],
+                target_state: "Attack1".to_string(),
+                has_exit_time: true,
+                exit_time: 1.0,
+            },
+        ],
+        loop_animation: false,
+        on_enter: Some(set_cant_move),
+        on_exit: None,
         ..default()
     };
 
@@ -762,21 +891,11 @@ fn setup_animator() -> Animator {
         last_index: AnimationType::Attack1.config_index().1,
         transitions: vec![
             Transition {
-                conditions: vec![Condition {
-                    param_name: "attack".to_string(),
-                    operator: ConditionOperator::Equals,
-                    value: AnimatorParam::Trigger(true),
-                }],
-                target_state: "Attack2".to_string(),
-                has_exit_time: true,
-                exit_time: 1.0,
-            }, 
-            Transition {
                 conditions: vec![],
-                target_state: "Idle".to_string(),
+                target_state: "Attack1End".to_string(),
                 has_exit_time: true,
                 exit_time: 1.0,
-            }
+            },
         ],
         loop_animation: false,
         on_enter: Some(set_attack),
@@ -784,19 +903,85 @@ fn setup_animator() -> Animator {
         ..default()
     };
 
+    let attack1_end_state = AnimationState {
+        name: "Attack1End".to_string(),
+        first_index: AnimationType::Attack1End.config_index().0,
+        last_index: AnimationType::Attack1End.config_index().1,
+        transitions: vec![
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "attack".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Trigger(true),
+                }],
+                target_state: "Attack2Prep".to_string(),
+                has_exit_time: true,
+                exit_time: 1.0,
+            },
+            Transition {
+                conditions: vec![],
+                target_state: "Idle".to_string(),
+                has_exit_time: true,
+                exit_time: 1.1,
+            },
+        ],
+        loop_animation: false,
+        on_enter: None,
+        on_exit: Some(set_can_move),
+        ..default()
+    };
+
+    let attack2_prep_state = AnimationState {
+        name: "Attack2Prep".to_string(),
+        first_index: AnimationType::Attack2Prep.config_index().0,
+        last_index: AnimationType::Attack2Prep.config_index().1,
+        transitions: vec![
+            Transition {
+                conditions: vec![],
+                target_state: "Attack2".to_string(),
+                has_exit_time: true,
+                exit_time: 1.0,
+            },
+        ],
+        loop_animation: false,
+        on_enter: Some(set_cant_move),
+        on_exit: None,
+        ..default()
+    };
+
     let attack2_state = AnimationState {
         name: "Attack2".to_string(),
         first_index: AnimationType::Attack2.config_index().0,
         last_index: AnimationType::Attack2.config_index().1,
-        transitions: vec![Transition {
-            conditions: vec![],
-            target_state: "Idle".to_string(),
-            has_exit_time: true,
-            exit_time: 1.0,
-        }],
+        transitions: vec![
+            Transition {
+                conditions: vec![],
+                target_state: "Attack2End".to_string(),
+                has_exit_time: true,
+                exit_time: 1.0,
+            },
+        ],
         loop_animation: false,
         on_enter: Some(set_attack),
         on_exit: Some(set_not_attack),
+        ..default()
+    };
+
+    let attack2_end_state = AnimationState {
+        name: "Attack2End".to_string(),
+        first_index: AnimationType::Attack2End.config_index().0,
+        last_index: AnimationType::Attack2End.config_index().1,
+        transitions: vec![
+            Transition {
+                conditions: vec![],
+                target_state: "Idle".to_string(),
+                has_exit_time: true,
+                exit_time: 1.0,
+            },
+        ],
+        loop_animation: false,
+        on_enter: None,
+        on_exit: Some(set_can_move),
         ..default()
     };
 
@@ -861,23 +1046,68 @@ fn setup_animator() -> Animator {
         ..default()
     };
 
+    let defense_state = AnimationState {
+        name : "Defense".to_string(),
+        first_index: AnimationType::Hurt.config_index().0,
+        last_index: AnimationType::Hurt.config_index().1,
+        transitions: vec![
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "defense".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Trigger(true),
+                }],
+                target_state: "Defense".to_string(),
+                has_exit_time: false,
+                exit_time: 1.0,
+            },
+            Transition {
+                conditions: vec![],
+                target_state: "Idle".to_string(),
+                has_exit_time: true,
+                exit_time: 1.0,
+            },
+        ],
+        loop_animation: false,
+        on_enter: Some(set_cant_move),
+        on_exit: Some(set_can_move),
+        ..default()
+    };
+
+    let items_state = AnimationState {
+        name : "Items".to_string(),
+        first_index: AnimationType::Items.config_index().0,
+        last_index: AnimationType::Items.config_index().1,
+        transitions: vec![
+            Transition {
+                conditions: vec![],
+                target_state: "Idle".to_string(),
+                has_exit_time: true,
+                exit_time: 1.0,
+            },
+        ],
+        loop_animation: false,
+        on_enter: Some(set_cant_move),
+        on_exit: Some(set_can_move),
+        ..default()
+    };
+
     let mut animator = Animator::new();
     animator.add_parameter("is_moving", AnimatorParam::Bool(false));
     animator.add_parameter("is_running", AnimatorParam::Bool(false));
     animator.add_parameter("is_crouching", AnimatorParam::Bool(false));
     animator.add_parameter("is_grounded", AnimatorParam::Bool(true));
-    animator.add_parameter("can_move", AnimatorParam::Bool(true));
+    animator.add_parameter("can_move", AnimatorParam::Bool(false));
     animator.add_parameter("velocity_y", AnimatorParam::Float(0.0));
     animator.add_parameter("jump", AnimatorParam::Trigger(false));
     animator.add_parameter("slide", AnimatorParam::Trigger(false));
     animator.add_parameter("is_sliding", AnimatorParam::Bool(false));
     animator.add_parameter("attack", AnimatorParam::Trigger(false));
     animator.add_parameter("hit", AnimatorParam::Trigger(false));
+    animator.add_parameter("defense", AnimatorParam::Trigger(false));
     animator.add_parameter("is_alive", AnimatorParam::Bool(true));
-
+    animator.add_parameter("items", AnimatorParam::Trigger(false));
     animator.add_parameter("is_facing_right", AnimatorParam::Bool(true));
-    animator.add_parameter("is_on_wall", AnimatorParam::Bool(false));
-    animator.add_parameter("is_on_ceiling", AnimatorParam::Bool(false));
     animator.add_parameter("shift_press_time", AnimatorParam::Float(0.0));
     animator.add_parameter("impulse_x", AnimatorParam::Float(0.0));
 
@@ -892,11 +1122,16 @@ fn setup_animator() -> Animator {
     animator.add_state(slide_state);
     animator.add_state(attack1_state);
     animator.add_state(attack2_state);
+    animator.add_state(attack1_prep_state);
+    animator.add_state(attack2_prep_state);
+    animator.add_state(attack1_end_state);
+    animator.add_state(attack2_end_state);
     animator.add_state(die_state);
     animator.add_state(hit_state);
     animator.add_state(lie_state);
     animator.add_state(stand_state);
-    
+    animator.add_state(defense_state);
+    animator.add_state(items_state);
 
     animator.set_initial_state(
         "Lie",
@@ -908,8 +1143,7 @@ fn setup_animator() -> Animator {
     animator
 }
 
-fn set_not_attack(mut commands: &mut Commands, entity: Entity, animator: &mut Animator) {
-    animator.set_bool("can_move", true);
+fn set_not_attack(mut commands: &mut Commands, _entity: Entity, animator: &mut Animator) {
     for child in animator.active_children.iter() {
         commands.entity(*child).despawn_recursive();
     }
@@ -918,121 +1152,35 @@ fn set_not_attack(mut commands: &mut Commands, entity: Entity, animator: &mut An
 }
 
 fn set_attack(mut commands: &mut Commands, entity: Entity, animator: &mut Animator) {
-    animator.set_bool("can_move", false);
     for child in animator.active_children.iter() {
         commands.entity(*child).despawn_recursive();
     }
-    let collider_layer =
-        CollisionLayers::new(GameLayer::PlayerHitBox, [GameLayer::Enemy]);
-    let id = commands.spawn((
-        Collider::rectangle(30., 10.),
-        Transform::from_xyz(10., 0., 0.),
-        Sensor,
-        collider_layer,
-    )).set_parent(entity).id();
+    let collider_layer = CollisionLayers::new(GameLayer::PlayerHitBox, [GameLayer::Enemy]);
+    let id = commands
+        .spawn((
+            Collider::rectangle(30., 10.),
+            Transform::from_xyz(10., 0., 0.),
+            Sensor,
+            collider_layer,
+        ))
+        .set_parent(entity)
+        .id();
     animator.push_active_child(id);
 }
 
-fn set_can_move(mut commands: &mut Commands, entity: Entity, animator: &mut Animator) {
+fn set_can_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator) {
     animator.set_bool("can_move", true);
 }
 
-fn set_cant_move(mut commands: &mut Commands, entity: Entity, animator: &mut Animator) {
+fn set_cant_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator) {
     animator.set_bool("can_move", false);
-}
-
-fn set_sliding(mut commands: &mut Commands, entity: Entity, animator: &mut Animator) {
-    animator.set_bool("can_move", false);
-    animator.set_bool("is_sliding", true);
-}
-
-fn set_not_sliding(mut commands: &mut Commands, entity: Entity, animator: &mut Animator) {
-    animator.set_bool("can_move", true);
-    animator.set_bool("is_sliding", false);
 }
 
 fn check_contact(
-    spatial_query: SpatialQuery,
-    query: Query<(&Transform, &Collider), With<Player>>,
-    mut param: Single<&mut Parameters, With<Player>>,
     mut animator: Single<&mut Animator, With<Player>>,
+    controller: Single<&TnuaController, With<Player>>,
 ) {
-    for (transform, collider) in &query {
-        let origin = Vec2::new(transform.translation.x, transform.translation.y);
-        let rotation = transform.rotation.z;
-        let direction_x = if param.get_bool("is_facing_right") {
-            Dir2::X
-        } else {
-            Dir2::NEG_X
-        };
-        let max_distance_y = 0.2;
-        let max_distance_x = 0.5;
-        let max_hits = 1;
-
-        let config_y = ShapeCastConfig::from_max_distance(max_distance_y);
-        let config_x = ShapeCastConfig::from_max_distance(max_distance_x);
-        let filter = SpatialQueryFilter::default().with_mask(GameLayer::Ground);
-
-        let hits_ground = spatial_query.shape_hits(
-            &collider,
-            origin,
-            rotation,
-            Dir2::NEG_Y,
-            max_hits,
-            &config_y,
-            &filter,
-        );
-        let hits_wall = spatial_query.shape_hits(
-            &collider,
-            origin,
-            rotation,
-            direction_x,
-            max_hits,
-            &config_x,
-            &filter,
-        );
-        let hits_ceiling = spatial_query.shape_hits(
-            &collider,
-            origin,
-            rotation,
-            Dir2::Y,
-            max_hits,
-            &config_y,
-            &filter,
-        );
-
-        param.set_bool("is_grounded", hits_ground.len() > 0);
-        animator.set_bool("is_grounded", hits_ground.len() > 0);
-
-        param.set_bool("is_on_wall", hits_wall.len() > 0);
-        param.set_bool("is_on_ceiling", hits_ceiling.len() > 0);
-    }
-}
-
-fn check_hitbox(
-    collisions: Res<Collisions>,
-    mut query: Query<(Entity, &Transform), With<Sensor>>,
-    mut actor_query: Query<(Entity, &mut Damagable, &mut Animator, &mut ExternalImpulse, &Transform), With<Player>>,
-) {
-    for (entity, transform) in &query {
-        for (aentity, mut damagable, mut animator, mut impulse, atransform) in &mut actor_query {
-            if collisions.contains(aentity, entity) || collisions.contains(entity, aentity){
-                let dir = if (atransform.translation - transform.translation).x >= 0. {
-                    1.
-                } else {
-                    -1.
-                };
-                if !damagable.is_invincible {
-                    //impulse.apply_impulse(Vec2::new(dir * 300., 10.));
-                    animator.set_trigger("hit");
-                }
-                damagable.take_hit(10.);
-                println!("PlayerHealth:{}",damagable.health);
-                
-            }
-        }
-
-    }
+    animator.set_bool("is_grounded", !controller.is_airborne().unwrap());
 }
 
 pub struct PlayerPlugin;
@@ -1040,14 +1188,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(input::PlayerInputPlugin);
-        app.add_systems(Startup, (setup_player,).chain());
-        app.add_systems(
-            FixedUpdate,
-            (
-                check_contact,
-                check_hitbox,
-            )
-                .chain(),
-        );
+        app.add_systems(Startup, setup_player);
+        app.add_systems(FixedUpdate, check_contact);
     }
 }

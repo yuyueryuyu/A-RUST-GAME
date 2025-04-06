@@ -1,0 +1,201 @@
+use bevy::prelude::*;
+
+use crate::damagable::Damagable;
+use crate::items::ItemList;
+use crate::player::Player;
+
+const MAX_HEALTH_LEN: f32 = 300.;
+const MAX_HEALTH_WID: f32 = 30.;
+
+#[derive(Component)]
+pub struct HealthBarBg {
+    pub length: f32,
+}
+
+#[derive(Component)]
+pub struct HealthBar {
+    pub length: f32,
+}
+
+#[derive(Component)]
+pub struct ItemImg {
+    pub index: usize,   
+}
+
+#[derive(Component)]
+pub struct ItemNum {
+    pub nums: i32,
+}
+
+
+fn update_item(
+    asset_server: Res<AssetServer>,
+    item_list: Single<&ItemList, With<Player>>,
+    item_img: Single<(&mut ImageNode, &mut ItemImg)>,
+    item_num: Single<(&mut Text, &mut ItemNum)>,
+) {
+    let (mut item, mut item_img) = item_img.into_inner();
+    let (mut text, mut item_num) = item_num.into_inner();
+    let item_now = &item_list.items[item_list.item_now];
+    if item_img.index != item_list.item_now {
+        item_img.index = item_list.item_now;
+        item.image = asset_server.load(&item_now.texture_path);
+    }
+    if item_num.nums != item_now.nums {
+        item_num.nums = item_now.nums;
+        text.0 = item_now.nums.to_string();
+    }
+}
+
+fn spawn_box(
+    mut commands: Commands, 
+    asset_server: Res<AssetServer>,
+) {
+    let ui_container = Node {
+        width: Val::Percent(100.0),
+        height: Val::Percent(100.0),
+        justify_content: JustifyContent::Start,
+        ..default()
+    };
+
+    let health_bar_container = Node {
+        width: Val::Percent(80.),
+        height: Val::Px(80.),
+        justify_content: JustifyContent::Start,
+        left: Val::Percent(5.),
+        top: Val::Percent(7.),
+        position_type: PositionType::Relative,
+        ..Default::default()
+    };
+
+    let left_box = Node {
+        width: Val::Px(80.),
+        height: Val::Px(80.),
+        position_type: PositionType::Relative,
+        justify_content: JustifyContent::Center,
+        padding: UiRect::all(Val::Px(10.)),
+        ..default()
+    };
+
+    let red_bar = Node {
+        width: Val::Percent(100.),
+        height: Val::Percent(100.),
+        border: UiRect::all(Val::Px(2.)),
+        position_type: PositionType::Relative,
+        ..default()
+    };
+
+    let bar_bg = Node {
+        width: Val::Px(MAX_HEALTH_LEN),
+        height: Val::Px(MAX_HEALTH_WID),
+        position_type: PositionType::Relative,
+        justify_content: JustifyContent::Start,
+        ..default()
+    };
+    let left = ImageNode::new(asset_server.load("Art/Kyrise's 16x16 RPG Icon Pack - V1.3/icons/16x16/potion_02a.png"));
+    let text_node = Node {
+        position_type: PositionType::Absolute,
+        width: Val::Px(30.),
+        height: Val::Px(30.),
+        right: Val::Px(0.),
+        top: Val::Percent(0.),
+        justify_content: JustifyContent::Center,
+        //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
+        ..default()
+    };
+    let text = Text::new("0");
+    let font = TextFont {
+        font: asset_server.load("UI/Fonts/m5x7.ttf"),
+        font_size: 30.0,
+        ..default()
+    };
+
+    let bar_color = Color::srgb(0.67, 0., 0.);
+    let barbg_color = Color::srgb(0.3, 0.3, 0.3);
+    let left_color = Color::srgb(0.7, 0.6, 0.3);
+    
+    let ui_entity = commands.spawn(ui_container).id();
+    let healthbar_entity = commands.spawn(health_bar_container).id();
+    let left_entity = commands.spawn((
+        left_box, BackgroundColor(left_color)
+    )).id();
+    let bar_entity = commands
+        .spawn((red_bar, BackgroundColor(bar_color), HealthBar { length: 100. }))
+        .id();
+    let barbg_entity = commands
+        .spawn((
+            bar_bg,
+            BackgroundColor(barbg_color),
+            HealthBarBg {
+                length: MAX_HEALTH_LEN,
+            },
+        ))
+        .id();
+    let item_entity = commands.spawn((
+        left, ItemImg { index: 0 }
+    )).id();
+    let text_node_entity = commands.spawn((
+        text_node,
+    )).with_children(|parent| {
+        parent.spawn((
+            text, font, Label, ItemNum { nums : 0 }
+        ));
+    }).id();
+
+    commands
+        .entity(ui_entity)
+        .add_children(&[healthbar_entity]);
+    commands.entity(healthbar_entity).add_children(&[left_entity, barbg_entity]);
+    commands.entity(barbg_entity).add_children(&[bar_entity]);
+    commands.entity(left_entity).add_children(&[item_entity, text_node_entity]);
+    //commands.entity(text_node_entity).add_children(&[text_entity]);
+}
+
+fn update_health(
+    time: Res<Time>,
+    damagable: Single<&Damagable, With<Player>>,
+    health_bar_bg: Single<(&mut Node, &mut HealthBarBg)>,
+    health_bar: Single<(&mut Node, &mut HealthBar), Without<HealthBarBg>>,
+) {
+    let (mut bar_bg_node, mut bar_bg) = health_bar_bg.into_inner();
+    let (mut bar_node, mut bar) = health_bar.into_inner();
+    let target_max = damagable.max_health / 100. * MAX_HEALTH_LEN;
+    if bar_bg.length > target_max {
+        bar_bg.length -= time.delta_secs() * MAX_HEALTH_LEN;
+        if bar_bg.length < target_max {
+            bar_bg.length = target_max;
+        }
+        bar_bg_node.width = Val::Px(bar_bg.length);
+    } else if bar_bg.length < target_max {
+        bar_bg.length += time.delta_secs() * MAX_HEALTH_LEN;
+        if bar_bg.length > target_max {
+            bar_bg.length = target_max;
+        }
+        bar_bg_node.width = Val::Px(bar_bg.length);
+    }
+
+    let target_len = damagable.health / damagable.max_health * 100.;
+    if bar.length > target_len {
+        bar.length -= time.delta_secs() * 100.;
+        if bar.length < target_len {
+            bar.length = target_len;
+        }
+        bar_node.width = Val::Percent(bar.length);
+    } else if bar.length < target_len {
+        bar.length += time.delta_secs() * 100.;
+        if bar.length > target_len {
+            bar.length = target_len;
+        }
+        bar_node.width = Val::Percent(bar.length);
+    }
+}
+
+pub struct HealthBarPlugin;
+
+impl Plugin for HealthBarPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, spawn_box);
+        app.add_systems(Update, update_health);
+        app.add_systems(PostUpdate, update_item);
+    }
+}

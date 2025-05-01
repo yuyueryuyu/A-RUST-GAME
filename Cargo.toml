@@ -15,6 +15,7 @@ big-brain = "0.22.0"
 bevy-tnua-physics-integration-layer = "0.5"
 bevy-tnua = "0.21.0"
 bevy-tnua-avian2d = "0.2"
+bevy_kira_audio = { version = "0.22.0", features = [ "mp3", "wav" ]}
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
 opt-level = 1

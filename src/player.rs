@@ -1,5 +1,9 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
+use bevy_kira_audio::Audio;
+use bevy_kira_audio::AudioControl;
+use bevy_kira_audio::AudioInstance;
+use bevy_kira_audio::AudioTween;
 use bevy_tnua::prelude::*;
 use std::collections::HashSet;
 use std::process::CommandArgs;
@@ -404,6 +408,8 @@ fn setup_animator() -> Animator {
             },
         ],
         loop_animation: true,
+        on_enter: Some(set_move),
+        on_exit: Some(set_not_move),
         ..default()
     };
 
@@ -524,6 +530,8 @@ fn setup_animator() -> Animator {
             },
         ],
         loop_animation: true,
+        on_enter: Some(set_move),
+        on_exit: Some(set_not_move),
         ..default()
     };
 
@@ -704,6 +712,7 @@ fn setup_animator() -> Animator {
             },
         ],
         loop_animation: true,
+        on_enter: Some(set_jump),
         ..default()
     };
 
@@ -824,6 +833,7 @@ fn setup_animator() -> Animator {
             },
         ],
         loop_animation: true,
+        on_exit: Some(set_landing),
         ..default()
     };
 
@@ -1143,7 +1153,9 @@ fn setup_animator() -> Animator {
     animator
 }
 
-fn set_not_attack(mut commands: &mut Commands, _entity: Entity, animator: &mut Animator) {
+fn set_not_attack(mut commands: &mut Commands, _entity: Entity, animator: &mut Animator
+    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
+    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
     for child in animator.active_children.iter() {
         commands.entity(*child).despawn_recursive();
     }
@@ -1151,7 +1163,11 @@ fn set_not_attack(mut commands: &mut Commands, _entity: Entity, animator: &mut A
     animator.active_children = HashSet::new();
 }
 
-fn set_attack(mut commands: &mut Commands, entity: Entity, animator: &mut Animator) {
+fn set_attack(mut commands: &mut Commands, entity: Entity, animator: &mut Animator
+    ,asset_server: &Res<AssetServer>, audio: &Res<Audio>
+    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
+        audio.play(asset_server.load(
+            "Audio/SFX/10_Battle_SFX/39_Block_03.wav"));
     for child in animator.active_children.iter() {
         commands.entity(*child).despawn_recursive();
     }
@@ -1168,13 +1184,59 @@ fn set_attack(mut commands: &mut Commands, entity: Entity, animator: &mut Animat
     animator.push_active_child(id);
 }
 
-fn set_can_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator) {
+fn set_can_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
+    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
+    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
     animator.set_bool("can_move", true);
 }
 
-fn set_cant_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator) {
+fn set_cant_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
+    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
+    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
     animator.set_bool("can_move", false);
 }
+
+fn set_jump(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
+    ,asset_server: &Res<AssetServer>, audio: &Res<Audio>
+    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
+        audio.play(asset_server.load(
+            "Audio/SFX/12_Player_Movement_SFX/30_Jump_03.wav"));
+}
+
+fn set_landing(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
+    ,asset_server: &Res<AssetServer>, audio: &Res<Audio>
+    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
+        audio.play(asset_server.load(
+            "Audio/SFX/12_Player_Movement_SFX/45_Landing_01.wav"));
+}
+
+
+fn set_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
+    ,asset_server: &Res<AssetServer>, audio: &Res<Audio>
+    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
+    if let Some(haudio) = &animator.audio {
+        if let Some(instance) = audio_instances.get_mut(haudio) {
+            instance.stop(AudioTween::default());
+        }
+    }    
+    let handle = 
+        audio.play(asset_server.load(
+            "Audio/SFX/12_Player_Movement_SFX/03_Step_grass_03.wav"))
+                .with_playback_rate(2.0).looped().handle();
+    animator.audio = Some(handle);
+}
+
+fn set_not_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
+    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
+    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
+    if let Some(audio) = &animator.audio {
+        if let Some(instance) = audio_instances.get_mut(audio) {
+            instance.stop(AudioTween::default());
+        }
+    }
+    animator.audio = None;
+}
+
 
 fn check_contact(
     mut animator: Single<&mut Animator, With<Player>>,

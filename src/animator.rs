@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_kira_audio::{Audio, AudioInstance};
 use std::collections::{
     HashMap, HashSet
 };
@@ -49,8 +50,8 @@ pub struct AnimationState {
     pub last_index: usize,
     pub transitions: Vec<Transition>,
     pub loop_animation: bool,
-    pub on_enter: Option<fn(&mut Commands, Entity, &mut Animator)>, // 进入状态时的回调
-    pub on_exit: Option<fn(&mut Commands, Entity, &mut Animator)>,  // 退出状态时的回调
+    pub on_enter: Option<fn(&mut Commands, Entity, &mut Animator, &Res<AssetServer>, &Res<Audio>, &mut ResMut<Assets<AudioInstance>>)>, // 进入状态时的回调
+    pub on_exit: Option<fn(&mut Commands, Entity, &mut Animator, &Res<AssetServer>, &Res<Audio>, &mut ResMut<Assets<AudioInstance>>)>,  // 退出状态时的回调
 }
 
 impl Default for AnimationState {
@@ -82,6 +83,7 @@ pub struct Animator {
     active_triggers: HashSet<String>, // 当前激活的trigger集合
     consumed_triggers: HashSet<String>, // 已消费的trigger集合
     pub active_children: HashSet<Entity>,
+    pub audio: Option<Handle<AudioInstance>>,
 }
 
 impl Animator {
@@ -99,6 +101,7 @@ impl Animator {
             active_triggers: HashSet::new(),
             consumed_triggers: HashSet::new(),
             active_children: HashSet::new(),
+            audio: None,
         }
     }
 
@@ -262,7 +265,12 @@ impl Animator {
     }
 
     // 更新动画状态
-    pub fn update(&mut self, commands: &mut Commands, entity: Entity, delta: Duration, atlas: &mut TextureAtlas) {
+    pub fn update(
+        &mut self, commands: &mut Commands, 
+        entity: Entity, delta: Duration, atlas: &mut TextureAtlas,
+        asset_server: &Res<AssetServer>, audio: &Res<Audio>,
+        audio_instances: &mut ResMut<Assets<AudioInstance>>,
+    ) {
 
         let target_clone = self.target_state.clone();
 
@@ -271,7 +279,7 @@ impl Animator {
 
             if let Some(state) = self.states.get(&self.current_state) {
                 if let Some(on_exit) = state.on_exit {
-                    on_exit(commands, entity, self);
+                    on_exit(commands, entity, self, asset_server, audio, audio_instances);
                 }
             }
 
@@ -288,7 +296,7 @@ impl Animator {
 
             if let Some(state) = self.states.get(&self.current_state) {
                 if let Some(on_enter) = state.on_enter {
-                    on_enter(commands, entity, self);
+                    on_enter(commands, entity, self, asset_server, audio, audio_instances);
                 }
             }
             
@@ -372,12 +380,15 @@ impl Animator {
 fn update_animators(
     mut commands: Commands,
     time: Res<Time>,
+    asset_server: Res<AssetServer>, 
+    audio: Res<Audio>,
+    mut audio_instances: ResMut<Assets<AudioInstance>>,
     mut query: Query<(Entity, &mut Animator, &mut Sprite)>,
 ) {
     for (entity, mut animator, mut sprite) in &mut query {
         // 更新动画状态机
         if let Some(atlas) = &mut sprite.texture_atlas {
-            animator.update(&mut commands, entity, time.delta(), atlas);
+            animator.update(&mut commands, entity, time.delta(), atlas, &asset_server, &audio, &mut audio_instances);
         }
 
     }

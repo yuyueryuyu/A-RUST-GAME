@@ -3,6 +3,8 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use avian2d::prelude::*;
 use bevy_tnua::prelude::*;
 use bevy_tnua_avian2d::TnuaAvian2dPlugin;
+use big_brain::BigBrainPlugin;
+use bevy_kira_audio::prelude::*;
 
 
 mod background;
@@ -22,11 +24,13 @@ mod items;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
+        .add_plugins(AudioPlugin)
         .add_plugins(WorldInspectorPlugin::new())
         .add_plugins(PhysicsPlugins::default())
         .add_plugins(PhysicsDebugPlugin::default())
         .add_plugins(TnuaControllerPlugin::new(FixedUpdate))
         .add_plugins(TnuaAvian2dPlugin::new(FixedUpdate))
+        .add_plugins(BigBrainPlugin::new(PreUpdate))
         .add_plugins(camera::CameraPlugin)
         .add_plugins(tiles::TilesPlugin)
         .add_plugins(background::BackgroundPlugin)

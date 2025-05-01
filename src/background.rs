@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-
+use bevy_kira_audio::prelude::*;
 #[derive(Component)]
 pub struct Background {
     pub starting_position: Vec2,
@@ -62,12 +62,18 @@ fn setup_bg(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
 }
 
+fn play_audio(
+    asset_server: Res<AssetServer>, 
+    audio: Res<Audio>) {
+    audio.play(asset_server.load("Audio/Music/mp3/Dark Ambient 3.mp3")).looped();
+}
 pub struct BackgroundPlugin;
 
 impl Plugin for BackgroundPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (
-            setup_bg
-        ).chain());
+            setup_bg,
+            play_audio
+        ));
     }
 }

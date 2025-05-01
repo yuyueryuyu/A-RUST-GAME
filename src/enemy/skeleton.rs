@@ -1,5 +1,6 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
+use bevy_kira_audio::{Audio, AudioInstance};
 use big_brain::prelude::*;
 use std::collections::HashSet;
 
@@ -28,13 +29,43 @@ fn setup_enemy(
 
     spawn_enemy(
         &mut commands,
-        Vec2::new(250.0, 44.1),
+        Vec2::new(250.0, 45.1),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(400.0, 44.1),
+        Vec2::new(400.0, 45.2),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(250.0, 157.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(400.0, 157.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(400.0, 257.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(500.0, 257.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(726.0, 413.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
@@ -308,10 +339,15 @@ fn setup_animator() -> Animator {
         name: "Death".to_string(),
         first_index: AnimationType::Death.config_index().0,
         last_index: AnimationType::Death.config_index().1,
-        transitions: vec![],
+        transitions: vec![Transition {
+            conditions: vec![],
+            target_state: "Idle".to_string(),
+            has_exit_time: true,
+            exit_time: 1.0,
+        }],
         loop_animation: false,
         on_enter: Some(set_cant_move),
-        on_exit: None,
+        on_exit: Some(set_death),
         ..default()
     };
 
@@ -361,7 +397,15 @@ fn setup_animator() -> Animator {
     animator
 }
 
-fn set_not_attack(commands: &mut Commands, _entity: Entity, animator: &mut Animator) {
+fn set_death(commands: &mut Commands, entity: Entity, animator: &mut Animator
+    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
+    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
+    commands.entity(entity).despawn_recursive();
+}
+
+fn set_not_attack(commands: &mut Commands, _entity: Entity, animator: &mut Animator
+    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
+    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
     animator.set_bool("can_move", true);
     for child in animator.active_children.iter() {
         commands.entity(*child).despawn_recursive();
@@ -370,7 +414,9 @@ fn set_not_attack(commands: &mut Commands, _entity: Entity, animator: &mut Anima
     animator.active_children = HashSet::new();
 }
 
-fn set_attack(commands: &mut Commands, entity: Entity, animator: &mut Animator) {
+fn set_attack(commands: &mut Commands, entity: Entity, animator: &mut Animator
+    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
+    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
     animator.set_bool("can_move", false);
     let collider_layer = CollisionLayers::new(GameLayer::EnemyHitBox, [GameLayer::Player]);
     let id = commands
@@ -385,11 +431,15 @@ fn set_attack(commands: &mut Commands, entity: Entity, animator: &mut Animator) 
     animator.push_active_child(id);
 }
 
-fn _set_can_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator) {
+fn _set_can_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
+    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
+    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
     animator.set_bool("can_move", true);
 }
 
-fn set_cant_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator) {
+fn set_cant_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
+    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
+    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
     animator.set_bool("can_move", false);
 }
 

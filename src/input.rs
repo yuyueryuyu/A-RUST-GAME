@@ -1,3 +1,4 @@
+use bevy::asset;
 use bevy_tnua::math::*;
 
 use avian2d::prelude::*;
@@ -5,6 +6,7 @@ use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 use bevy_tnua::prelude::*;
 use bevy_tnua::builtins::*;
+use bevy_kira_audio::prelude::*;
 
 use crate::animator::Animator;
 use crate::damagable::Damagable;
@@ -143,7 +145,7 @@ fn on_move(
     animator.set_float("velocity_y", vel.y);
     
     controller.basis(TnuaBuiltinWalk {
-        desired_velocity: Vec3::new(direction_vector.x , direction_vector.y, 0.)* get_speed(&*animator),
+        desired_velocity: Vec3::new(direction_vector.x , 0., 0.)* get_speed(&*animator),
         float_height: 18.,
         air_acceleration: MOVE_ACC,
         acceleration: MOVE_ACC,

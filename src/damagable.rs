@@ -1,6 +1,7 @@
 use crate::animator::*;
 use avian2d::prelude::*;
-use bevy::prelude::*;
+use bevy::{prelude::*, state::commands};
+use bevy_kira_audio::{Audio, AudioControl};
 use bevy_tnua::{builtins::*, prelude::*};
 
 #[derive(Component, Debug)]
@@ -122,6 +123,7 @@ fn check_hitbox(
         &mut TnuaController,
         &Transform,
     )>,
+    asset_server: Res<AssetServer>, audio: Res<Audio>
 ) {
     for (hitbox_entity, hitbox_parent) in &hitbox_query {
         for (damaged_entity, mut damagable, mut animator, mut controller, damaged_trans) in
@@ -145,9 +147,12 @@ fn check_hitbox(
                         animator.set_trigger("hit");
 
                         controller.action(TnuaBuiltinKnockback {
-                            shove: Vec3::new(30., 0., 0.) * dir,
+                            shove: Vec3::new(50., 0., 0.) * dir,
                             ..Default::default()
                         });
+                        audio.play(asset_server.load(
+                            "Audio/SFX/12_Player_Movement_SFX/61_Hit_03.wav"));
+    
                     } else if damagable.is_defending {
                         controller.action(TnuaBuiltinKnockback {
                             shove: Vec3::new(10., 0., 0.) * dir,

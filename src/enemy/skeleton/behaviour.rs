@@ -97,7 +97,6 @@ pub fn move_to_player_action_system(
                     animator.set_float("facing_direction", facing_direction);
                 }
                 let distance = delta.length();
-
                 if distance > MAX_DISTANCE {
                     let vx = get_speed(&animator, &notice) * facing_direction;
                     controller.basis(TnuaBuiltinWalk {
@@ -248,7 +247,6 @@ pub struct SkeletonBehaviourPlugin;
 
 impl Plugin for SkeletonBehaviourPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(BigBrainPlugin::new(PreUpdate));
         app.add_systems(Update, notice_system);
         app.add_systems(
             PreUpdate,

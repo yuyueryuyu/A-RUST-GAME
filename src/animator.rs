@@ -396,12 +396,14 @@ fn update_animators(
 
 
 // 将系统添加到Bevy的App
-pub struct AnimatorPlugin;
+pub struct AnimatorPlugin<S: States> {
+    pub state: S,
+}
 
-impl Plugin for AnimatorPlugin {
+impl<S: States> Plugin for AnimatorPlugin<S> {
     fn build(&self, app: &mut App) {
-        app.add_systems(PostUpdate, (
-            update_animators,
-        ).chain());
+        app.add_systems(PostUpdate, 
+            update_animators.run_if(in_state(self.state.clone()))
+        );
     }
 }

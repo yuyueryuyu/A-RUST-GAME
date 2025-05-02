@@ -712,7 +712,6 @@ fn setup_animator() -> Animator {
             },
         ],
         loop_animation: true,
-        on_enter: Some(set_jump),
         ..default()
     };
 
@@ -857,6 +856,7 @@ fn setup_animator() -> Animator {
             has_exit_time: false,
             exit_time: 0.0,
         },],
+        on_enter: Some(set_jump),
         loop_animation: false,
         ..default()
     };
@@ -1199,6 +1199,7 @@ fn set_cant_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut A
 fn set_jump(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
     ,asset_server: &Res<AssetServer>, audio: &Res<Audio>
     , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
+        //println!("jump!");
         audio.play(asset_server.load(
             "Audio/SFX/12_Player_Movement_SFX/30_Jump_03.wav"));
 }
@@ -1217,6 +1218,8 @@ fn set_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animat
     if let Some(haudio) = &animator.audio {
         if let Some(instance) = audio_instances.get_mut(haudio) {
             instance.stop(AudioTween::default());
+        } else {
+            audio.stop();
         }
     }    
     let handle = 
@@ -1232,6 +1235,8 @@ fn set_not_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut An
     if let Some(audio) = &animator.audio {
         if let Some(instance) = audio_instances.get_mut(audio) {
             instance.stop(AudioTween::default());
+        } else {
+            _audio.stop();
         }
     }
     animator.audio = None;
@@ -1245,12 +1250,14 @@ fn check_contact(
     animator.set_bool("is_grounded", !controller.is_airborne().unwrap());
 }
 
-pub struct PlayerPlugin;
+pub struct PlayerPlugin<S: States> {
+    pub state: S,
+}
 
-impl Plugin for PlayerPlugin {
+impl<S: States> Plugin for PlayerPlugin<S> {
     fn build(&self, app: &mut App) {
-        app.add_plugins(input::PlayerInputPlugin);
-        app.add_systems(Startup, setup_player);
-        app.add_systems(FixedUpdate, check_contact);
+        app.add_plugins(input::PlayerInputPlugin { state: self.state.clone() });
+        app.add_systems(OnEnter(self.state.clone()), setup_player.run_if(in_state(self.state.clone())));
+        app.add_systems(FixedUpdate, check_contact.run_if(in_state(self.state.clone())));
     }
 }

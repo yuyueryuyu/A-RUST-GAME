@@ -190,12 +190,14 @@ fn update_health(
     }
 }
 
-pub struct HealthBarPlugin;
+pub struct HealthBarPlugin<S: States> {
+    pub state: S,
+}
 
-impl Plugin for HealthBarPlugin {
+impl<S: States> Plugin for HealthBarPlugin<S> {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_box);
-        app.add_systems(Update, update_health);
-        app.add_systems(PostUpdate, update_item);
+        app.add_systems(OnEnter(self.state.clone()), spawn_box.run_if(in_state(self.state.clone())));
+        app.add_systems(Update, update_health.run_if(in_state(self.state.clone())));
+        app.add_systems(PostUpdate, update_item.run_if(in_state(self.state.clone())));
     }
 }

@@ -243,20 +243,25 @@ pub fn patrol_scorer_system(
     }
 }
 
-pub struct SkeletonBehaviourPlugin;
+pub struct SkeletonBehaviourPlugin<S: States> {
+    pub state: S
+}
 
-impl Plugin for SkeletonBehaviourPlugin {
+impl<S: States> Plugin for SkeletonBehaviourPlugin<S> {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, notice_system);
+        app.add_systems(Update, notice_system.run_if(in_state(self.state.clone())));
         app.add_systems(
             PreUpdate,
             (
-                attack_action_system,
-                move_to_player_action_system,
-                patrol_action_system,
+                attack_action_system.run_if(in_state(self.state.clone())),
+                move_to_player_action_system.run_if(in_state(self.state.clone())),
+                patrol_action_system.run_if(in_state(self.state.clone())),
             )
                 .in_set(BigBrainSet::Actions),
         );
-        app.add_systems(First, (notice_scorer_system, patrol_scorer_system));
+        app.add_systems(First, (
+            notice_scorer_system.run_if(in_state(self.state.clone())), 
+            patrol_scorer_system.run_if(in_state(self.state.clone()))
+        ));
     }
 }

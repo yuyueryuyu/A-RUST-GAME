@@ -169,10 +169,16 @@ fn check_hitbox(
     }
 }
 
-pub struct DamagePlugin;
+pub struct DamagePlugin<S: States> {
+    pub state: S,
+}
 
-impl Plugin for DamagePlugin {
+impl<S: States> Plugin for DamagePlugin<S> {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (check_invincible, check_hitbox, check_defending));
+        app.add_systems(Update, (
+            check_invincible.run_if(in_state(self.state.clone())), 
+            check_hitbox.run_if(in_state(self.state.clone())), 
+            check_defending.run_if(in_state(self.state.clone()))
+        ));
     }
 }

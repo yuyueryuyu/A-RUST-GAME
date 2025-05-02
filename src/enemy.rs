@@ -3,11 +3,13 @@ use bevy::prelude::*;
 mod skeleton;
 mod fire_demon;
 
-pub struct EnemyPlugin;
+pub struct EnemyPlugin<S: States> {
+    pub state: S,
+}
 
-impl Plugin for EnemyPlugin {
+impl<S:States> Plugin for EnemyPlugin<S> {
     fn build(&self, app: &mut App) {
-        app.add_plugins(skeleton::SkeletonPlugin);
-        app.add_plugins(fire_demon::FireDemonPlugin);
+        app.add_plugins(skeleton::SkeletonPlugin { state : self.state.clone() });
+        app.add_plugins(fire_demon::FireDemonPlugin { state : self.state.clone() });
     }
 }

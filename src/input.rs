@@ -238,22 +238,24 @@ fn on_use(
     }
 }
 
-pub struct PlayerInputPlugin;
+pub struct PlayerInputPlugin<S: States> {
+    pub state: S,
+}
 
-impl Plugin for PlayerInputPlugin {
+impl<S: States> Plugin for PlayerInputPlugin<S> {
     fn build(&self, app: &mut App) {
         app.add_plugins(InputManagerPlugin::<Action>::default());
         app.add_systems(
             Update,
             (
-                on_move,
-                on_run,
-                on_jump,
-                on_crouch,
-                on_attack,
-                on_slide,
-                on_defense,
-                on_use,
+                on_move.run_if(in_state(self.state.clone())),
+                on_run.run_if(in_state(self.state.clone())),
+                on_jump.run_if(in_state(self.state.clone())),
+                on_crouch.run_if(in_state(self.state.clone())),
+                on_attack.run_if(in_state(self.state.clone())),
+                on_slide.run_if(in_state(self.state.clone())),
+                on_defense.run_if(in_state(self.state.clone())),
+                on_use.run_if(in_state(self.state.clone())),
             )
         );
     }

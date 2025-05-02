@@ -85,13 +85,16 @@ fn apply_item_effects(
     }
 }
 
-pub struct ItemsPlugin;
+pub struct ItemsPlugin<S: States> {
+    pub state: S,
+}
 
-impl Plugin for ItemsPlugin {
+impl<S: States> Plugin for ItemsPlugin<S> {
     fn build(&self, app: &mut App) {
         app.add_event::<UseItemEvent>();
         app.add_systems(Update, (
-            use_item_system, apply_item_effects
+            use_item_system.run_if(in_state(self.state.clone())), 
+            apply_item_effects.run_if(in_state(self.state.clone()))
         ));
     }
 }

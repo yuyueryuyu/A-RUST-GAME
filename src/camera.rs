@@ -231,14 +231,16 @@ fn update_parallax_effect(
     }
 }
 
-pub struct CameraPlugin;
+pub struct CameraPlugin<S: States> {
+    pub state: S,
+}
 
-impl Plugin for CameraPlugin {
+impl<S: States> Plugin for CameraPlugin<S> {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (
-            setup_camera,
-        ));
-        app.add_systems(Update, update_parallax_effect);
-        app.add_systems(FixedUpdate, camera_follow_system);
+            setup_camera),
+        );
+        app.add_systems(Update, update_parallax_effect.run_if(in_state(self.state.clone())));
+        app.add_systems(FixedUpdate, camera_follow_system.run_if(in_state(self.state.clone())));
     }
 }

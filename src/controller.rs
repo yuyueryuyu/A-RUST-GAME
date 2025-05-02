@@ -11,8 +11,10 @@ pub struct ControllerBundle {
 
 impl ControllerBundle {
     pub fn new(sensor_len: f32) -> Self {
+        let mut controller = TnuaController::default();
+        controller.basis(TnuaBuiltinWalk::default());
         Self {
-            controller: TnuaController::default(),
+            controller: controller,
             sensor_shape: TnuaAvian2dSensorShape(
                 Collider::rectangle(sensor_len, 0.)
             ),

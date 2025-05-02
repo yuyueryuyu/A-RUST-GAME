@@ -41,15 +41,17 @@ impl TiledPhysicsBackend for MyCustomAvianPhysicsBackend {
     }
 }
 
-pub struct TilesPlugin;
+pub struct TilesPlugin<S: States> {
+    pub state: S
+}
 
-impl Plugin for TilesPlugin {
+impl<S: States> Plugin for TilesPlugin<S> {
     fn build(&self, app: &mut App) {
         app.add_plugins(TilemapPlugin);
         app.add_plugins(TiledMapPlugin::default());
         app.add_plugins(TiledPhysicsPlugin::<MyCustomAvianPhysicsBackend>::default());
-        app.add_systems(Startup, (
-            setup_tilesets,
+        app.add_systems(OnEnter(self.state.clone()), (
+            setup_tilesets.run_if(in_state(self.state.clone())),
         ));
     }
 }

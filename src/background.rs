@@ -67,13 +67,15 @@ fn play_audio(
     audio: Res<Audio>) {
     audio.play(asset_server.load("Audio/Music/mp3/Dark Ambient 3.mp3")).looped();
 }
-pub struct BackgroundPlugin;
+pub struct BackgroundPlugin<S: States> {
+    pub state: S,
+}
 
-impl Plugin for BackgroundPlugin {
+impl<S: States> Plugin for BackgroundPlugin<S> {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (
-            setup_bg,
-            play_audio
+        app.add_systems(OnEnter(self.state.clone()), (
+            setup_bg.run_if(in_state(self.state.clone())),
+            play_audio.run_if(in_state(self.state.clone()))
         ));
     }
 }

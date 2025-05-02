@@ -537,18 +537,20 @@ fn on_move(mut query: Query<(&LinearVelocity, &mut Animator), With<Skeleton>>) {
     }
 }
 
-pub struct SkeletonPlugin;
+pub struct SkeletonPlugin<S: States> {
+    pub state: S
+}
 
-impl Plugin for SkeletonPlugin {
+impl<S: States> Plugin for SkeletonPlugin<S> {
     fn build(&self, app: &mut App) {
-        app.add_plugins(SkeletonBehaviourPlugin);
-        app.add_systems(Startup, setup_enemy);
+        app.add_plugins(SkeletonBehaviourPlugin { state: self.state.clone() });
+        app.add_systems(OnEnter(self.state.clone()), setup_enemy.run_if(in_state(self.state.clone())));
         app.add_systems(
             FixedUpdate,
             (
-                check_contact,
-                on_move,
-                on_flip_direction,
+                check_contact.run_if(in_state(self.state.clone())),
+                on_move.run_if(in_state(self.state.clone())),
+                on_flip_direction.run_if(in_state(self.state.clone())),
             ),
         );
     }

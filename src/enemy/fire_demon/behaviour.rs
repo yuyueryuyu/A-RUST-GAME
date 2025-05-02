@@ -239,19 +239,21 @@ pub fn notice_scorer_system(
         }
     }
 }
-pub struct FireDemonBehaviourPlugin;
+pub struct FireDemonBehaviourPlugin<S: States> {
+    pub state: S
+}
 
-impl Plugin for FireDemonBehaviourPlugin {
+impl<S: States> Plugin for FireDemonBehaviourPlugin<S> {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, notice_system);
+        app.add_systems(Update, notice_system.run_if(in_state(self.state.clone())));
         app.add_systems(
             PreUpdate,
             (
-                attack_action_system,
-                move_to_player_action_system
+                attack_action_system.run_if(in_state(self.state.clone())),
+                move_to_player_action_system.run_if(in_state(self.state.clone()))
             )
                 .in_set(BigBrainSet::Actions),
         );
-        app.add_systems(First, (notice_scorer_system, ));
+        app.add_systems(First, (notice_scorer_system.run_if(in_state(self.state.clone())), ));
     }
 }

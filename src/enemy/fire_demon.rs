@@ -552,18 +552,20 @@ fn on_move(mut query: Query<(&LinearVelocity, &mut Animator), With<FireDemon>>) 
     }
 }
 
-pub struct FireDemonPlugin;
+pub struct FireDemonPlugin<S: States> {
+    pub state: S
+}
 
-impl Plugin for FireDemonPlugin {
+impl<S: States> Plugin for FireDemonPlugin<S> {
     fn build(&self, app: &mut App) {
-        app.add_plugins(FireDemonBehaviourPlugin);
-        app.add_systems(Startup, setup_enemy);
+        app.add_plugins(FireDemonBehaviourPlugin { state: self.state.clone() });
+        app.add_systems(OnEnter(self.state.clone()), setup_enemy.run_if(in_state(self.state.clone())));
         app.add_systems(
             FixedUpdate,
             (
-                check_contact,
-                on_move,
-                on_flip_direction,
+                check_contact.run_if(in_state(self.state.clone())),
+                on_move.run_if(in_state(self.state.clone())),
+                on_flip_direction.run_if(in_state(self.state.clone())),
             ),
         );
     }

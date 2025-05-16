@@ -385,10 +385,22 @@ fn setup_animator() -> Animator {
     animator
 }
 
+#[derive(Component, Reflect)]
+pub struct FireGlove;
+
 fn set_death(commands: &mut Commands, entity: Entity, animator: &mut Animator
-    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
+    ,asset_server: &Res<AssetServer>, _audio: &Res<Audio>
     , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
     commands.entity(entity).despawn_recursive();
+    commands.spawn((
+        Sprite {
+            image: asset_server.load("Art/Kyrise's 16x16 RPG Icon Pack - V1.3/icons/16x16/gloves_01e.png"),
+            ..default()
+        },
+        Transform::from_xyz(1430.0, 27.1, 0.0),
+        FireGlove,
+    )
+    );
 }
 
 fn set_not_attack(commands: &mut Commands, _entity: Entity, animator: &mut Animator
@@ -558,6 +570,20 @@ fn on_move(mut query: Query<(&LinearVelocity, &mut Animator), With<FireDemon>>) 
     }
 }
 
+fn check_get(
+    mut commands: Commands,
+    glove: Query<(Entity, &Transform), With<FireGlove>>,
+    player: Single<(&mut Animator, &Transform), With<Player>>,
+) {
+    if let Ok((entity, gpos)) = glove.get_single() {
+        let (mut animator, ppos) = player.into_inner();
+        if (gpos.translation - ppos.translation).length() <= 5. {
+            animator.set_bool("can_wall_jump", true);
+            commands.entity(entity).despawn_recursive();
+        }
+    }
+}
+
 pub struct FireDemonPlugin<S: States> {
     pub state: S
 }
@@ -572,6 +598,7 @@ impl<S: States> Plugin for FireDemonPlugin<S> {
                 check_contact.run_if(in_state(self.state.clone())),
                 on_move.run_if(in_state(self.state.clone())),
                 on_flip_direction.run_if(in_state(self.state.clone())),
+                check_get.run_if(in_state(self.state.clone())),
             ),
         );
     }

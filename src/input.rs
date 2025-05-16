@@ -172,6 +172,7 @@ fn on_jump(
         animator.set_trigger("jump");
         controller.action(TnuaBuiltinJump {
             height: JUMP_IMPULSE,
+            allow_in_air: animator.get_bool("is_on_wall") && animator.get_bool("can_wall_jump"),
             ..Default::default()
         });
     }

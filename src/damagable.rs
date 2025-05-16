@@ -203,7 +203,7 @@ fn check_hitbox(
                         });
                     }
 
-                    damagable.take_hit(10.);
+                    damagable.take_hit(1000.);
                 }
 
             }

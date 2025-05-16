@@ -1,5 +1,6 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
+use bevy::render::render_resource::encase::private::Length;
 use bevy_kira_audio::Audio;
 use bevy_kira_audio::AudioControl;
 use bevy_kira_audio::AudioInstance;
@@ -777,6 +778,16 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
                 has_exit_time: false,
                 exit_time: 0.0,
             },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "is_on_wall".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Bool(true),
+                }],
+                target_state: "WallSlide".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
         ],
         loop_animation: true,
         ..default()
@@ -834,6 +845,16 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
                     value: AnimatorParam::Trigger(true),
                 }],
                 target_state: "Defense".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "is_on_wall".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Bool(true),
+                }],
+                target_state: "WallSlide".to_string(),
                 has_exit_time: false,
                 exit_time: 0.0,
             },
@@ -1120,6 +1141,56 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
         ..default()
     };
 
+    let wall_slide_state = AnimationState {
+        name: "WallSlide".to_string(),
+        first_index: AnimationType::WallSlide.config_index().0,
+        last_index: AnimationType::WallSlide.config_index().1,
+        transitions: vec![
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "is_grounded".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Bool(true),
+                }],
+                target_state: "Idle".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "is_alive".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Bool(false),
+                }],
+                target_state: "Die".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "hit".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Trigger(true),
+                }],
+                target_state: "Hit".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "is_on_wall".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Bool(false),
+                }],
+                target_state: "Rise".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            }
+        ],
+        loop_animation: true,
+        ..default()
+    };
+
     let mut animator = Animator::new().with_params(params.clone());
     if params.is_empty() {
         animator.add_parameter("is_moving", AnimatorParam::Bool(false));
@@ -1140,6 +1211,8 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
         animator.add_parameter("shift_press_time", AnimatorParam::Float(0.0));
         animator.add_parameter("impulse_x", AnimatorParam::Float(0.0));
         animator.add_parameter("revival", AnimatorParam::Trigger(false));
+        animator.add_parameter("is_on_wall", AnimatorParam::Bool(false));
+        animator.add_parameter("can_wall_jump", AnimatorParam::Bool(false));
     }
 
     animator.add_state(idle_state);
@@ -1163,7 +1236,7 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
     animator.add_state(stand_state);
     animator.add_state(defense_state);
     animator.add_state(items_state);
-
+    animator.add_state(wall_slide_state);
     animator.set_initial_state(
         "Lie",
         AnimationType::Lie.config_index().0,
@@ -1265,10 +1338,34 @@ fn set_not_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut An
 
 
 fn check_contact(
-    mut animator: Single<&mut Animator, With<Player>>,
+    mut player: Single<(&mut Animator, &Transform, &Collider), With<Player>>,
     controller: Single<&TnuaController, With<Player>>,
+    spatial_query: SpatialQuery,
 ) {
-    animator.set_bool("is_grounded", !controller.is_airborne().unwrap());
+    let (mut animator, transform, collider) = player.into_inner();
+    let is_grounded = !controller.is_airborne().unwrap();
+    animator.set_bool("is_grounded", is_grounded);
+    let origin = Vec2::new(transform.translation.x, transform.translation.y);
+    let rotation = transform.rotation.z;
+    let direction_x = if animator.get_bool("is_facing_right") {
+        Dir2::X
+    } else {
+        Dir2::NEG_X
+    };
+    let max_distance_x = 0.5;
+    let max_hits = 1;
+    let config_x = ShapeCastConfig::from_max_distance(max_distance_x);
+    let filter = SpatialQueryFilter::default().with_mask(GameLayer::Ground);
+    let hits_wall = spatial_query.shape_hits(
+        &collider,
+        origin,
+        rotation,
+        direction_x,
+        max_hits,
+        &config_x,
+        &filter,
+    );
+    animator.set_bool("is_on_wall", hits_wall.length() > 0 && !is_grounded);
 }
 
 pub struct PlayerPlugin<S: States> {

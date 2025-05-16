@@ -1,6 +1,12 @@
 use bevy::prelude::*;
+use moonshine_save::load;
 
+use crate::animator::Animator;
+use crate::damagable::Damagable;
+use crate::player::Player;
 use crate::{AppState, PausedState};
+use crate::save::load;
+use crate::save::{trigger_save, LoadRequest, SaveRequest};
 #[derive(Component)]
 pub struct MenuItem {
     pub id: i32,
@@ -61,6 +67,27 @@ fn spawn_box(
         //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
         ..default()
     };
+
+    let save_node = Node {
+        position_type: PositionType::Absolute,
+        width: Val::Percent(100.),
+        height: Val::Percent(10.),
+        top: Val::Percent(45.),
+        justify_content: JustifyContent::Center,
+        //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
+        ..default()
+    };
+
+    let load_node = Node {
+        position_type: PositionType::Absolute,
+        width: Val::Percent(100.),
+        height: Val::Percent(10.),
+        top: Val::Percent(55.),
+        justify_content: JustifyContent::Center,
+        //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
+        ..default()
+    };
+
     let exit_node = Node {
         position_type: PositionType::Absolute,
         width: Val::Percent(100.),
@@ -70,7 +97,9 @@ fn spawn_box(
         //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
         ..default()
     };
-    let start_text = Text::new("[ Game Start ]");
+    let start_text = Text::new("[ Continue ]");
+    let save_text = Text::new("Save Game");
+    let load_text = Text::new("Load Game");
     let exit_text = Text::new("Game Exit");
     let font = TextFont {
         font: asset_server.load("UI/Fonts/m5x7.ttf"),
@@ -102,11 +131,27 @@ fn spawn_box(
         ));
     }).id();
 
+    let save_node_entity = commands.spawn((
+        save_node,
+    )).with_children(|parent| {
+        parent.spawn((
+            save_text, font.clone(), Label, MenuItem { id: 1, is_selected : false }
+        ));
+    }).id();
+
+    let load_node_entity = commands.spawn((
+        load_node,
+    )).with_children(|parent| {
+        parent.spawn((
+            load_text, font.clone(), Label, MenuItem { id: 2, is_selected : false }
+        ));
+    }).id();
+
     let exit_node_entity = commands.spawn((
         exit_node,
     )).with_children(|parent| {
         parent.spawn((
-            exit_text, font.clone(), Label, MenuItem { id: 1, is_selected : false }
+            exit_text, font.clone(), Label, MenuItem { id: 3, is_selected : false }
         ));
     }).id();
 
@@ -115,7 +160,7 @@ fn spawn_box(
         .add_children(&[title_entity, choice_entity]);
     commands
         .entity(choice_entity)
-        .add_children(&[start_node_entity, exit_node_entity]);
+        .add_children(&[start_node_entity, save_node_entity, load_node_entity, exit_node_entity]);
     //commands.entity(text_node_entity).add_children(&[text_entity]);
 }
 
@@ -183,7 +228,10 @@ fn handle_enter(
     mut commands: Commands,
     ui: Query<Entity, With<UI>>,
     mut next_state: ResMut<NextState<PausedState>>,
-    mut exit_events: EventWriter<AppExit>
+    mut exit_events: EventWriter<AppExit>,
+    save_events: EventWriter<SaveRequest>,
+    load_events: EventWriter<LoadRequest>,
+    mut player: Single<(&mut Transform, &mut Animator, &mut Damagable), With<Player>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Enter) {
         for item in &items {
@@ -194,6 +242,32 @@ fn handle_enter(
                     }
                     next_state.set(PausedState::Running);
                 } else if item.id == 1 {
+                    trigger_save(save_events);
+                    //trigger_load(load_events)
+                    if let Ok(entity) = ui.get_single() {
+                        commands.entity(entity).despawn_recursive();
+                    }
+                    next_state.set(PausedState::Running);
+                }  else if item.id == 2 {
+                    let transform = load().unwrap();
+                    let (
+                        mut trans, 
+                        mut animator,
+                        mut dam,
+                    ) = player.into_inner();
+                    trans.translation.x = transform.translation[0];
+                    trans.translation.y = transform.translation[1];
+                    trans.translation.z = transform.translation[2];
+                    trans.scale.x = transform.scale[0];
+                    trans.scale.y = transform.scale[1];
+                    trans.scale.z = transform.scale[2];
+                    animator.parameters = transform.params;
+                    dam.copy(transform.damagable);
+                    if let Ok(entity) = ui.get_single() {
+                        commands.entity(entity).despawn_recursive();
+                    }
+                    next_state.set(PausedState::Running);
+                } else if item.id == 3 {
                     exit_events.send(AppExit::Success);
                 }
                 break;

@@ -1,11 +1,13 @@
 use crate::animator::*;
 use crate::enemy::fire_demon::FireDemon;
 use crate::player::Player;
+use avian2d::prelude::LinearVelocity;
 use bevy::prelude::*;
 use bevy_tnua::builtins::*;
 use bevy_tnua::math::*;
 use bevy_tnua::prelude::*;
 use big_brain::prelude::*;
+use rand::Rng;
 
 const WALK_SPEED: f32 = 20.0;
 const NOTICED_SPEED: f32 = 40.0;
@@ -21,7 +23,7 @@ fn get_speed(animator: &Animator, notice: &Notice) -> f32 {
     0.0
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
 pub struct Notice {
     pub add_per_sec: f32,
     pub sub_per_sec: f32,
@@ -59,7 +61,7 @@ pub fn notice_system(time: Res<Time>, mut query: Query<(&mut Notice, &Animator),
     }
 }
 
-#[derive(Clone, Component, Debug, ActionBuilder)]
+#[derive(Clone, Component, Debug, ActionBuilder, Reflect)]
 pub struct MoveToPlayer;
 
 const CLOSE_MAX_DISTANCE: f32 = 80.;
@@ -73,6 +75,7 @@ pub fn move_to_player_action_system(
         (
             &Transform,
             &mut TnuaController,
+            &mut LinearVelocity,
             &mut Animator,
             &Notice,
         ),
@@ -82,7 +85,7 @@ pub fn move_to_player_action_system(
 ) {
     for (Actor(actor), mut action_state, _move_to, span) in &mut action_query {
         let _guard = span.span().enter();
-        let (actor_pos, mut controller, mut animator, notice) =
+        let (actor_pos, mut controller, mut vel, mut animator, notice) =
             actor_query.get_mut(*actor).expect("actor has no position");
         match *action_state {
             ActionState::Requested => {
@@ -104,45 +107,89 @@ pub fn move_to_player_action_system(
 
                 if distance > FAR_MAX_DISTANCE {
                     let vx = get_speed(&animator, &notice) * facing_direction;
-                    controller.basis(TnuaBuiltinWalk {
-                        desired_velocity: Vec3::new(vx, 0., 0.),
-                        float_height: FLOAT_HEIGHT,
-                        air_acceleration: 600.,
-                        acceleration: 600.,
-                        max_slope: float_consts::FRAC_PI_4,
-                        ..Default::default()
-                    });
+                    if controller.is_airborne().unwrap() {
+                        controller.basis(TnuaBuiltinWalk {
+                            desired_velocity: Vec3::new(vel.x, 0., 0.),
+                            float_height: FLOAT_HEIGHT,
+                            air_acceleration: 600.,
+                            acceleration: 600.,
+                            max_slope: float_consts::FRAC_PI_4,
+                            ..Default::default()
+                        });
+                    } else {
+                        controller.basis(TnuaBuiltinWalk {
+                            desired_velocity: Vec3::new(vx, 0., 0.),
+                            float_height: FLOAT_HEIGHT,
+                            air_acceleration: 600.,
+                            acceleration: 600.,
+                            max_slope: float_consts::FRAC_PI_4,
+                            ..Default::default()
+                        });
+                    }
                 } else if distance > MID_FAR_MAX_DISTANCE {
                     let vx = 4.0 * get_speed(&animator, &notice) * facing_direction;
-                    controller.basis(TnuaBuiltinWalk {
-                        desired_velocity: Vec3::new(vx, 0., 0.),
-                        float_height: FLOAT_HEIGHT,
-                        air_acceleration: 600.,
-                        acceleration: 600.,
-                        max_slope: float_consts::FRAC_PI_4,
-                        ..Default::default()
-                    });
+                    if controller.is_airborne().unwrap() {
+                        controller.basis(TnuaBuiltinWalk {
+                            desired_velocity: Vec3::new(vel.x, 0., 0.),
+                            float_height: FLOAT_HEIGHT,
+                            air_acceleration: 600.,
+                            acceleration: 600.,
+                            max_slope: float_consts::FRAC_PI_4,
+                            ..Default::default()
+                        });
+                    } else {
+                        controller.basis(TnuaBuiltinWalk {
+                            desired_velocity: Vec3::new(vx, 0., 0.),
+                            float_height: FLOAT_HEIGHT,
+                            air_acceleration: 600.,
+                            acceleration: 600.,
+                            max_slope: float_consts::FRAC_PI_4,
+                            ..Default::default()
+                        });
+                    }
                 } else if distance > MID_MAX_DISTANCE {
                     let vx = 3.0 * get_speed(&animator, &notice) * facing_direction;
-                    controller.basis(TnuaBuiltinWalk {
-                        desired_velocity: Vec3::new(vx, 0., 0.),
-                        float_height: FLOAT_HEIGHT,
-                        air_acceleration: 600.,
-                        acceleration: 600.,
-                        max_slope: float_consts::FRAC_PI_4,
-                        ..Default::default()
-                    });
+                    if controller.is_airborne().unwrap() {
+                        controller.basis(TnuaBuiltinWalk {
+                            desired_velocity: Vec3::new(vel.x, 0., 0.),
+                            float_height: FLOAT_HEIGHT,
+                            air_acceleration: 600.,
+                            acceleration: 600.,
+                            max_slope: float_consts::FRAC_PI_4,
+                            ..Default::default()
+                        });
+                    } else {
+                        controller.basis(TnuaBuiltinWalk {
+                            desired_velocity: Vec3::new(vx, 0., 0.),
+                            float_height: FLOAT_HEIGHT,
+                            air_acceleration: 600.,
+                            acceleration: 600.,
+                            max_slope: float_consts::FRAC_PI_4,
+                            ..Default::default()
+                        });
+                    }
                     *action_state = ActionState::Success;
                 } else {
-                    controller.basis(TnuaBuiltinWalk {
-                        desired_velocity: Vec3::new(0., 0., 0.),
-                        float_height: FLOAT_HEIGHT,
-                        air_acceleration: 600.,
-                        acceleration: 600.,
-                        max_slope: float_consts::FRAC_PI_4,
-                        ..Default::default()
-                    });
-                    *action_state = ActionState::Success;
+                    if controller.is_airborne().unwrap() {
+                        controller.basis(TnuaBuiltinWalk {
+                            desired_velocity: Vec3::new(vel.x, 0., 0.),
+                            float_height: FLOAT_HEIGHT,
+                            air_acceleration: 600.,
+                            acceleration: 600.,
+                            max_slope: float_consts::FRAC_PI_4,
+                            ..Default::default()
+                        });
+                    } else {
+                        controller.basis(TnuaBuiltinWalk {
+                            desired_velocity: Vec3::new(0., 0., 0.),
+                            float_height: FLOAT_HEIGHT,
+                            air_acceleration: 600.,
+                            acceleration: 600.,
+                            max_slope: float_consts::FRAC_PI_4,
+                            ..Default::default()
+                        });
+                        *action_state = ActionState::Success;
+                    }
                 }
             }
             ActionState::Cancelled => {
@@ -153,7 +200,7 @@ pub fn move_to_player_action_system(
     }
 }
 
-#[derive(Clone, Component, Debug, ActionBuilder)]
+#[derive(Clone, Component, Debug, ActionBuilder, Reflect)]
 pub struct Attack;
 
 pub fn attack_action_system(
@@ -190,8 +237,35 @@ pub fn attack_action_system(
                     animator.set_trigger("attack");
                     *state = ActionState::Executing;
                 } else {
-                    animator.set_trigger("boom");
-                    *state = ActionState::Executing;
+                    let mut rng = rand::rng();
+                    let random: f32 = rng.random();
+                    if random > 0.5 {
+                        animator.set_trigger("boom");
+                        *state = ActionState::Executing;
+                    } else {
+                        let delta = (player_pos.translation - actor_pos.translation).truncate();
+                        let facing_direction = if delta.x.trunc() > 0. {
+                            1.
+                        } else if delta.x.trunc() < 0. {
+                            -1.
+                        } else {
+                            0.
+                        };
+                        controller.action(TnuaBuiltinJump {
+                            height: 400.,
+                            ..Default::default()
+                        });
+                        controller.basis(TnuaBuiltinWalk {
+                            desired_velocity: Vec3::new(-120. * facing_direction, 0., 0.),
+                            float_height: FLOAT_HEIGHT,
+                            air_acceleration: 600.,
+                            acceleration: 600.,
+                            max_slope: float_consts::FRAC_PI_4,
+                            ..Default::default()
+                        });
+                        *state = ActionState::Failure;
+                    }
+                    
                 }
             }
             ActionState::Executing => {
@@ -226,7 +300,7 @@ pub fn attack_action_system(
         }
     }
 }
-#[derive(Clone, Component, Debug, ScorerBuilder)]
+#[derive(Clone, Component, Debug, ScorerBuilder, Reflect)]
 pub struct NoticeScorer;
 
 pub fn notice_scorer_system(

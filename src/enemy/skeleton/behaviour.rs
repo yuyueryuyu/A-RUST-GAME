@@ -20,7 +20,7 @@ fn get_speed(animator: &Animator, notice: &Notice) -> f32 {
     0.0
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Reflect, Debug)]
 pub struct Notice {
     pub add_per_sec: f32,
     pub sub_per_sec: f32,
@@ -58,7 +58,7 @@ pub fn notice_system(time: Res<Time>, mut query: Query<(&mut Notice, &Animator),
     }
 }
 
-#[derive(Clone, Component, Debug, ActionBuilder)]
+#[derive(Clone, Component, Reflect, Debug, ActionBuilder)]
 pub struct MoveToPlayer;
 
 const MAX_DISTANCE: f32 = 30.;
@@ -127,7 +127,7 @@ pub fn move_to_player_action_system(
     }
 }
 
-#[derive(Clone, Component, Debug, ActionBuilder)]
+#[derive(Clone, Component, Reflect, Debug, ActionBuilder)]
 pub struct Attack;
 
 pub fn attack_action_system(
@@ -166,7 +166,7 @@ pub fn attack_action_system(
         }
     }
 }
-#[derive(Clone, Component, Debug, ScorerBuilder)]
+#[derive(Clone, Component, Reflect, Debug, ScorerBuilder)]
 pub struct NoticeScorer;
 
 pub fn notice_scorer_system(
@@ -180,7 +180,7 @@ pub fn notice_scorer_system(
     }
 }
 
-#[derive(Clone, Component, Debug, ActionBuilder)]
+#[derive(Clone, Component, Reflect, Debug, ActionBuilder)]
 pub struct Patrol;
 
 pub fn patrol_action_system(
@@ -229,7 +229,7 @@ pub fn patrol_action_system(
     }
 }
 
-#[derive(Clone, Component, Debug, ScorerBuilder)]
+#[derive(Clone, Component, Reflect, Debug, ScorerBuilder)]
 pub struct PatrolScorer;
 
 pub fn patrol_scorer_system(

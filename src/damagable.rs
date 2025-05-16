@@ -1,10 +1,11 @@
-use crate::animator::*;
+use crate::{animator::*, save::load};
 use avian2d::prelude::*;
 use bevy::{prelude::*, state::commands};
 use bevy_kira_audio::{Audio, AudioControl};
 use bevy_tnua::{builtins::*, prelude::*};
+use serde::{Serialize, Deserialize};
 
-#[derive(Component, Debug)]
+#[derive(Component, Clone, Debug, Reflect, Serialize, Deserialize)]
 pub struct Damagable {
     pub max_health: f32,
     pub health: f32,
@@ -18,6 +19,7 @@ pub struct Damagable {
     pub invincibility_time: f32,
     pub time_since_hit: f32,
     pub time_since_defend: f32,
+    pub time_since_death: f32,
 }
 
 impl Damagable {
@@ -35,7 +37,24 @@ impl Damagable {
             invincibility_time: 0.4,
             time_since_hit: 0.,
             time_since_defend: 0.,
+            time_since_death: 0.,
         }
+    }
+
+    pub fn copy(&mut self, dam: Damagable) {
+        self.max_health = dam.max_health;
+        self.health = dam.health;
+        self.healing_amount = dam.healing_amount;
+        self.max_posture = dam.max_posture;
+        self.posture = dam.posture;
+        self.is_alive = dam.is_alive;
+        self.is_invincible = dam.is_invincible;
+        self.is_defending = dam.is_defending;
+        self.defending_time = dam.defending_time;
+        self.invincibility_time = dam.invincibility_time;
+        self.time_since_hit = dam.time_since_hit;
+        self.time_since_defend = dam.time_since_defend;
+        self.time_since_death = dam.time_since_death;
     }
 
     pub fn set_health(&mut self, health: f32) {
@@ -55,6 +74,11 @@ impl Damagable {
     pub fn set_invincible(&mut self, value: bool) {
         self.is_invincible = value;
         self.time_since_hit = 0.;
+    }
+
+    pub fn set_invincible_with_time(&mut self, invincible_time: f32) {
+        self.is_invincible = true;
+        self.time_since_hit = self.invincibility_time-invincible_time;
     }
 
     pub fn set_defending(&mut self, value: bool) {
@@ -112,6 +136,25 @@ fn check_defending(time: Res<Time>, mut query: Query<&mut Damagable>) {
     }
 }
 
+fn check_death(time: Res<Time>, mut query: Query<(&mut Animator, &mut Damagable, &mut Transform)>) {
+    for (mut animator, mut damagable, mut transform) in &mut query {
+        if !damagable.is_alive {
+            damagable.time_since_death += time.delta_secs();
+        }
+        if damagable.time_since_death > 5. {
+            
+            let trans_data = load().unwrap();
+            transform.translation.x = trans_data.translation[0];
+            transform.translation.y = trans_data.translation[1];
+            transform.scale.x = trans_data.scale[0];
+            transform.scale.y = trans_data.scale[1];
+            animator.parameters = trans_data.params.clone();
+            animator.set_trigger("revival");
+            damagable.copy(trans_data.damagable.clone());
+        }
+    }
+}
+
 fn check_hitbox(
     collisions: Res<Collisions>,
     hitbox_query: Query<(Entity, &Parent), With<Sensor>>,
@@ -143,7 +186,7 @@ fn check_hitbox(
                         -1.
                     };
 
-                    if !damagable.is_invincible && !damagable.is_defending {
+                    if !damagable.is_invincible && !damagable.is_defending && damagable.is_alive {
                         animator.set_trigger("hit");
 
                         controller.action(TnuaBuiltinKnockback {
@@ -178,7 +221,8 @@ impl<S: States> Plugin for DamagePlugin<S> {
         app.add_systems(Update, (
             check_invincible.run_if(in_state(self.state.clone())), 
             check_hitbox.run_if(in_state(self.state.clone())), 
-            check_defending.run_if(in_state(self.state.clone()))
+            check_defending.run_if(in_state(self.state.clone())),
+            check_death.run_if(in_state(self.state.clone())),
         ));
     }
 }

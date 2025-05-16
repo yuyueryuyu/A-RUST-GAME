@@ -1,0 +1,278 @@
+(
+  resources: {},
+  entities: {
+    4294967324: (
+      components: {
+        "avian2d::collision::broad_phase::AabbIntersections": ([]),
+        "avian2d::collision::collider::ColliderAabb": (
+          min: (113.9, 27.154352),
+          max: (126.1, 57.354355),
+        ),
+        "avian2d::collision::collider::ColliderParent": (4294967324),
+        "avian2d::collision::collider::ColliderTransform": (
+          translation: (0.0, 0.0),
+          rotation: (
+            cos: 1.0,
+            sin: 0.0,
+          ),
+          scale: (1.0, 1.0),
+        ),
+        "avian2d::collision::collider::CollisionMargin": (0.1),
+        "avian2d::collision::layers::CollisionLayers": (
+          memberships: (8),
+          filters: (37),
+        ),
+        "avian2d::dynamics::ccd::SweptCcd": (
+          mode: NonLinear,
+          include_dynamic: true,
+          linear_threshold: 0.0,
+          angular_threshold: 0.0,
+        ),
+        "avian2d::dynamics::rigid_body::AccumulatedTranslation": ((0.0, 0.0)),
+        "avian2d::dynamics::rigid_body::AngularVelocity": (0.0),
+        "avian2d::dynamics::rigid_body::GravityScale": (30.0),
+        "avian2d::dynamics::rigid_body::LinearVelocity": ((0.0, 0.0009792392)),
+        "avian2d::dynamics::rigid_body::PreSolveAngularVelocity": (0.0),
+        "avian2d::dynamics::rigid_body::PreSolveLinearVelocity": ((0.0, 0.0)),
+        "avian2d::dynamics::rigid_body::RigidBody": Dynamic,
+        "avian2d::dynamics::rigid_body::TimeSleeping": (0.015625),
+        "avian2d::dynamics::rigid_body::forces::ExternalAngularImpulse": (
+          impulse: 0.0,
+          persistent: false,
+        ),
+        "avian2d::dynamics::rigid_body::forces::ExternalForce": (
+          force: (0.0, 294.37573),
+          persistent: true,
+          torque: 0.0,
+        ),
+        "avian2d::dynamics::rigid_body::forces::ExternalImpulse": (
+          impulse: (0.0, 0.0),
+          persistent: false,
+          angular_impulse: 0.0,
+        ),
+        "avian2d::dynamics::rigid_body::forces::ExternalTorque": (
+          torque: 0.0,
+          persistent: true,
+        ),
+        "avian2d::dynamics::rigid_body::locked_axes::LockedAxes": (7),
+        "avian2d::dynamics::rigid_body::mass_properties::components::Mass": (1.0),
+        "avian2d::dynamics::rigid_body::mass_properties::components::collider::ColliderDensity": (1.0),
+        "avian2d::dynamics::rigid_body::mass_properties::components::collider::ColliderMassProperties": ((
+          mass: 329.09735,
+          angular_inertia: 24201.078,
+          center_of_mass: (0.0, -2.0),
+        )),
+        "avian2d::dynamics::rigid_body::mass_properties::components::computed::ComputedAngularInertia": (
+          inverse: 0.013598458,
+        ),
+        "avian2d::dynamics::rigid_body::mass_properties::components::computed::ComputedCenterOfMass": ((0.0, -2.0)),
+        "avian2d::dynamics::rigid_body::mass_properties::components::computed::ComputedMass": (
+          inverse: 1.0,
+        ),
+        "avian2d::dynamics::rigid_body::physics_material::Friction": (
+          dynamic_coefficient: -0.1,
+          static_coefficient: -0.1,
+          combine_rule: Average,
+        ),
+        "avian2d::position::Position": ((120.0, 44.254364)),
+        "avian2d::position::PreSolveAccumulatedTranslation": ((0.0, 0.0000075985754)),
+        "avian2d::position::PreviousRotation": ((
+          cos: 1.0,
+          sin: -0.0,
+        )),
+        "avian2d::position::Rotation": (
+          cos: 1.0,
+          sin: -0.0,
+        ),
+        "avian2d::sync::PreviousGlobalTransform": (((1.0, 0.0, -0.0, 0.0, 1.0, 0.0, 0.0, -0.0, 1.0, 120.0, 44.254364, 0.0))),
+        "bevy_render::primitives::Aabb": (
+          center: (-0.0, -0.0, 0.0),
+          half_extents: (25.0, 18.5, 0.0),
+        ),
+        "bevy_render::sync_world::SyncToRenderWorld": (),
+        "bevy_render::view::visibility::InheritedVisibility": (true),
+        "bevy_render::view::visibility::ViewVisibility": (true),
+        "bevy_render::view::visibility::Visibility": Inherited,
+        "bevy_transform::components::global_transform::GlobalTransform": ((1.0, 0.0, -0.0, 0.0, 1.0, 0.0, 0.0, -0.0, 1.0, 120.0, 44.254364, 0.0)),
+        "bevy_transform::components::transform::Transform": (
+          translation: (120.0, 44.254364, 0.0),
+          rotation: (0.0, 0.0, -0.0, 1.0),
+          scale: (1.0, 1.0, 1.0),
+        ),
+        "leafwing_input_manager::action_state::ActionState<my_bevy_game::input::Action>": (
+          disabled: false,
+          action_data: {
+            Down: (
+              disabled: false,
+              kind_data: Button((
+                state: Released,
+                update_state: Released,
+                fixed_update_state: Released,
+                value: 0.0,
+                update_value: 0.0,
+                fixed_update_value: 0.0,
+              )),
+            ),
+            Defense: (
+              disabled: false,
+              kind_data: Button((
+                state: Released,
+                update_state: Released,
+                fixed_update_state: Released,
+                value: 0.0,
+                update_value: 0.0,
+                fixed_update_value: 0.0,
+              )),
+            ),
+            Right: (
+              disabled: false,
+              kind_data: Button((
+                state: Released,
+                update_state: Released,
+                fixed_update_state: Released,
+                value: 0.0,
+                update_value: 0.0,
+                fixed_update_value: 0.0,
+              )),
+            ),
+            Crouch: (
+              disabled: false,
+              kind_data: Button((
+                state: Released,
+                update_state: Released,
+                fixed_update_state: Released,
+                value: 0.0,
+                update_value: 0.0,
+                fixed_update_value: 0.0,
+              )),
+            ),
+            Attack: (
+              disabled: false,
+              kind_data: Button((
+                state: Released,
+                update_state: Released,
+                fixed_update_state: Released,
+                value: 0.0,
+                update_value: 0.0,
+                fixed_update_value: 0.0,
+              )),
+            ),
+            UseItem: (
+              disabled: false,
+              kind_data: Button((
+                state: Released,
+                update_state: Released,
+                fixed_update_state: Released,
+                value: 0.0,
+                update_value: 0.0,
+                fixed_update_value: 0.0,
+              )),
+            ),
+            Left: (
+              disabled: false,
+              kind_data: Button((
+                state: Released,
+                update_state: Released,
+                fixed_update_state: Released,
+                value: 0.0,
+                update_value: 0.0,
+                fixed_update_value: 0.0,
+              )),
+            ),
+            Jump: (
+              disabled: false,
+              kind_data: Button((
+                state: Released,
+                update_state: Released,
+                fixed_update_state: Released,
+                value: 0.0,
+                update_value: 0.0,
+                fixed_update_value: 0.0,
+              )),
+            ),
+            Run: (
+              disabled: false,
+              kind_data: Button((
+                state: Released,
+                update_state: Released,
+                fixed_update_state: Released,
+                value: 0.0,
+                update_value: 0.0,
+                fixed_update_value: 0.0,
+              )),
+            ),
+            Up: (
+              disabled: false,
+              kind_data: Button((
+                state: Released,
+                update_state: Released,
+                fixed_update_state: Released,
+                value: 0.0,
+                update_value: 0.0,
+                fixed_update_value: 0.0,
+              )),
+            ),
+          },
+        ),
+        "leafwing_input_manager::input_map::InputMap<my_bevy_game::input::Action>": (
+          buttonlike_map: {
+            Defense: [
+              {
+                "MouseButton": Right,
+              },
+            ],
+            Up: [
+              {
+                "KeyCode": KeyW,
+              },
+            ],
+            Right: [
+              {
+                "KeyCode": KeyD,
+              },
+            ],
+            Crouch: [
+              {
+                "KeyCode": KeyC,
+              },
+            ],
+            Attack: [
+              {
+                "MouseButton": Left,
+              },
+            ],
+            UseItem: [
+              {
+                "KeyCode": KeyR,
+              },
+            ],
+            Left: [
+              {
+                "KeyCode": KeyA,
+              },
+            ],
+            Jump: [
+              {
+                "KeyCode": Space,
+              },
+            ],
+            Run: [
+              {
+                "KeyCode": ShiftLeft,
+              },
+            ],
+            Down: [
+              {
+                "KeyCode": KeyS,
+              },
+            ],
+          },
+          axislike_map: {},
+          dual_axislike_map: {},
+          triple_axislike_map: {},
+          associated_gamepad: None,
+        ),
+      },
+    ),
+  },
+)

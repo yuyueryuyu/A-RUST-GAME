@@ -1,8 +1,9 @@
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use crate::{damagable::{self, Damagable}, player::Player};
 
-#[derive(Component)]
+#[derive(Component, Reflect, Serialize, Deserialize)]
 pub struct ItemList {
     pub items: Vec<Item>,
     pub item_now: usize,
@@ -14,11 +15,12 @@ impl ItemList {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Reflect, Serialize, Deserialize)]
 pub enum ItemType {
     HealthPotion,
 }
 
+#[derive(Reflect, Serialize, Deserialize)]
 pub struct Item {
     pub item_type: ItemType,
     pub texture_path: String,

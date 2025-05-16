@@ -1,12 +1,14 @@
 use bevy::prelude::*;
 use bevy_kira_audio::{Audio, AudioInstance};
+use serde::{Deserialize, Serialize};
 use std::collections::{
     HashMap, HashSet
 };
+use std::hash::Hash;
 use std::time::Duration;
 
 // 动画参数类型
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AnimatorParam {
     Bool(bool),
     Int(i32),
@@ -72,7 +74,7 @@ impl Default for AnimationState {
 #[derive(Component, Debug)]
 pub struct Animator {
     states: HashMap<String, AnimationState>,
-    parameters: HashMap<String, AnimatorParam>,
+    pub parameters: HashMap<String, AnimatorParam>,
     current_state: String,
     target_state: Option<String>,
     pub first_index: usize,
@@ -103,6 +105,11 @@ impl Animator {
             active_children: HashSet::new(),
             audio: None,
         }
+    }
+
+    pub fn with_params(mut self, params: HashMap<String, AnimatorParam>) -> Self {
+        self.parameters = params;
+        self
     }
 
     // 添加状态

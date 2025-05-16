@@ -14,7 +14,7 @@ use crate::player::Player;
 mod behaviour;
 use behaviour::*;
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
 struct Skeleton;
 
 fn setup_enemy(
@@ -129,7 +129,7 @@ fn spawn_enemy(
     ));
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
 enum AnimationType {
     AttackPrep,
     Attack,

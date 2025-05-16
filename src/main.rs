@@ -21,6 +21,7 @@ mod physics;
 mod healthbar;
 mod items;
 mod menu;
+mod save;
 mod pause;
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
@@ -79,6 +80,7 @@ fn main() {
         .add_plugins(items::ItemsPlugin {
             state: AppState::InGame,
         })
+        .add_plugins(save::SavingPlugin)
         .run();
 }
 

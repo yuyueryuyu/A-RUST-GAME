@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_kira_audio::prelude::*;
-#[derive(Component)]
+#[derive(Component, Reflect)]
 pub struct Background {
     pub starting_position: Vec2,
     pub starting_z: f32,

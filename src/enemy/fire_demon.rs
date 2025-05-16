@@ -14,7 +14,7 @@ use crate::player::Player;
 mod behaviour;
 use behaviour::*;
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
 struct FireDemon;
 
 fn setup_enemy(
@@ -90,7 +90,7 @@ fn spawn_enemy(
     ));
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
 enum AnimationType {
     AttackPrep,
     Attack,
@@ -316,6 +316,7 @@ fn setup_animator() -> Animator {
             },
         ],
         loop_animation: false,
+        on_exit: Some(set_can_move),
         ..default()
     };
 
@@ -393,7 +394,6 @@ fn set_death(commands: &mut Commands, entity: Entity, animator: &mut Animator
 fn set_not_attack(commands: &mut Commands, _entity: Entity, animator: &mut Animator
     ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
     , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-    animator.set_bool("can_move", true);
     for child in animator.active_children.iter() {
         commands.entity(*child).despawn_recursive();
     }
@@ -404,7 +404,6 @@ fn set_not_attack(commands: &mut Commands, _entity: Entity, animator: &mut Anima
 fn set_attack(commands: &mut Commands, entity: Entity, animator: &mut Animator
     ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
     , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-    animator.set_bool("can_move", false);
     let collider_layer = CollisionLayers::new(GameLayer::EnemyHitBox, [GameLayer::Player]);
     let id = commands
         .spawn((
@@ -437,7 +436,7 @@ fn set_boom(commands: &mut Commands, entity: Entity, animator: &mut Animator
     let id = commands
         .spawn((
             Collider::rectangle(80., 100.),
-            Transform::from_xyz(0., -70., 0.),
+            Transform::from_xyz(0., -20., 0.),
             Sensor,
             collider_layer,
         ))
@@ -457,6 +456,13 @@ fn set_cant_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut A
     , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
     animator.set_bool("can_move", false);
 }
+
+fn set_can_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
+    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
+    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
+    animator.set_bool("can_move", true);
+}
+
 
 fn check_contact(
     spatial_query: SpatialQuery,

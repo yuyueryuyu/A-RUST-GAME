@@ -200,9 +200,9 @@ fn on_defense(player: Single<(&ActionState<Action>, &mut Animator, &mut Damagabl
 
 fn on_slide(
     time: Res<Time>,
-    player: Single<(&ActionState<Action>, &mut Animator, &mut TnuaController), With<Player>>,
+    player: Single<(&ActionState<Action>, &mut Animator, &mut TnuaController, &mut Damagable), With<Player>>,
 ) {
-    let (action_state, mut animator, mut controller) = player.into_inner();
+    let (action_state, mut animator, mut controller, mut damagable) = player.into_inner();
     if action_state.pressed(&Action::Run) {
         let shift_press_time = animator.get_float("shift_press_time");
         animator.set_float("shift_press_time", shift_press_time + time.delta_secs());
@@ -211,16 +211,17 @@ fn on_slide(
         let shift_press_time = animator.get_float("shift_press_time");
         if shift_press_time <= 0.4 {
             animator.set_trigger("slide");
+            damagable.set_invincible_with_time(0.5);
             let facing_direction = if animator.get_bool("is_facing_right") {
                 1.
             } else {
                 -1.
             };
             controller.action(TnuaBuiltinDash {
-                displacement: Vec3::new(50., 0., 0.)* facing_direction ,
-                speed: SLIDE_SPEED,
-                acceleration: SLIDE_ACC,
-                brake_acceleration: SLIDE_ACC,
+                displacement: Vec3::new(100., 0., 0.)* facing_direction ,
+                speed: SLIDE_SPEED * 2.,
+                acceleration: SLIDE_ACC * 2.,
+                brake_acceleration: SLIDE_ACC * 2.,
                 ..Default::default()
             });
         }

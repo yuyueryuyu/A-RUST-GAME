@@ -5,6 +5,8 @@ use bevy_kira_audio::AudioControl;
 use bevy_kira_audio::AudioInstance;
 use bevy_kira_audio::AudioTween;
 use bevy_tnua::prelude::*;
+use moonshine_save::save::Save;
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::process::CommandArgs;
 
@@ -19,20 +21,22 @@ use crate::items::Item;
 use crate::items::ItemList;
 use crate::items::ItemType;
 use crate::physics::*;
+use crate::save::TransformData;
 
-const START_POSITION: Vec3 = Vec3::new(120., 44.1, 0.0);
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[require(Save)]
 pub struct Player;
 
 fn setup_player(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut transform_data: ResMut<TransformData>,
 ) {
     let texture = asset_server.load("Art/Adventurer/adventurer-sheet.png");
     let layout = TextureAtlasLayout::from_grid(UVec2::new(50, 37), 20, 10, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
-    let animator = setup_animator();
+    let animator = setup_animator(transform_data.params.clone());
     let collider_layer = CollisionLayers::new(
         GameLayer::Player,
         [
@@ -48,8 +52,11 @@ fn setup_player(
         )],
         item_now: 0,
     };
+    let translation = Vec3::new(transform_data.translation[0], transform_data.translation[1], transform_data.translation[2]);
+    let scale = Vec3::new(transform_data.scale[0], transform_data.scale[1], transform_data.scale[2]);
     commands.spawn((
         Player,
+        Save,
         Sprite {
             image: texture,
             texture_atlas: Some(TextureAtlas {
@@ -58,7 +65,7 @@ fn setup_player(
             }),
             ..default()
         },
-        Transform::from_translation(START_POSITION),
+        Transform::from_translation(translation).with_scale(scale),
         PlayerInputBundle::default(),
         animator,
         ControllerBundle::new(11.8),
@@ -69,11 +76,11 @@ fn setup_player(
             ..default()
         },
         item_list,
-        Damagable::new(100.),
+        transform_data.damagable.clone(),
     ));
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
 enum AnimationType {
     AirAttack1,
     AirAttack2,
@@ -180,7 +187,7 @@ impl AnimationType {
     }
 }
 
-fn setup_animator() -> Animator {
+fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
     let idle_state = AnimationState {
         name: "Idle".to_string(),
         first_index: AnimationType::Idle.config_index().0,
@@ -1002,10 +1009,12 @@ fn setup_animator() -> Animator {
         transitions: vec![Transition {
             conditions: vec![],
             target_state: "Idle".to_string(),
-            has_exit_time: true,
-            exit_time: 2.0,
+            has_exit_time: false,
+            exit_time: 3.0,
         }],
         loop_animation: false,
+        on_enter: Some(set_cant_move),
+        on_exit: Some(set_can_move),
         ..default()
     };
 
@@ -1013,10 +1022,19 @@ fn setup_animator() -> Animator {
         name: "Die".to_string(),
         first_index: AnimationType::Die.config_index().0,
         last_index: AnimationType::Die.config_index().1,
-        transitions: vec![],
+        transitions: vec![Transition {
+            conditions: vec![Condition {
+                param_name: "revival".to_string(),
+                operator: ConditionOperator::Equals,
+                value: AnimatorParam::Trigger(true),
+            }],
+            target_state: "Idle".to_string(),
+            has_exit_time: false,
+            exit_time: 0.0,
+        }],
         loop_animation: false,
         on_enter: Some(set_cant_move),
-        on_exit: None,
+        on_exit:  None,
         ..default()
     };
 
@@ -1102,24 +1120,27 @@ fn setup_animator() -> Animator {
         ..default()
     };
 
-    let mut animator = Animator::new();
-    animator.add_parameter("is_moving", AnimatorParam::Bool(false));
-    animator.add_parameter("is_running", AnimatorParam::Bool(false));
-    animator.add_parameter("is_crouching", AnimatorParam::Bool(false));
-    animator.add_parameter("is_grounded", AnimatorParam::Bool(true));
-    animator.add_parameter("can_move", AnimatorParam::Bool(false));
-    animator.add_parameter("velocity_y", AnimatorParam::Float(0.0));
-    animator.add_parameter("jump", AnimatorParam::Trigger(false));
-    animator.add_parameter("slide", AnimatorParam::Trigger(false));
-    animator.add_parameter("is_sliding", AnimatorParam::Bool(false));
-    animator.add_parameter("attack", AnimatorParam::Trigger(false));
-    animator.add_parameter("hit", AnimatorParam::Trigger(false));
-    animator.add_parameter("defense", AnimatorParam::Trigger(false));
-    animator.add_parameter("is_alive", AnimatorParam::Bool(true));
-    animator.add_parameter("items", AnimatorParam::Trigger(false));
-    animator.add_parameter("is_facing_right", AnimatorParam::Bool(true));
-    animator.add_parameter("shift_press_time", AnimatorParam::Float(0.0));
-    animator.add_parameter("impulse_x", AnimatorParam::Float(0.0));
+    let mut animator = Animator::new().with_params(params.clone());
+    if params.is_empty() {
+        animator.add_parameter("is_moving", AnimatorParam::Bool(false));
+        animator.add_parameter("is_running", AnimatorParam::Bool(false));
+        animator.add_parameter("is_crouching", AnimatorParam::Bool(false));
+        animator.add_parameter("is_grounded", AnimatorParam::Bool(true));
+        animator.add_parameter("can_move", AnimatorParam::Bool(false));
+        animator.add_parameter("velocity_y", AnimatorParam::Float(0.0));
+        animator.add_parameter("jump", AnimatorParam::Trigger(false));
+        animator.add_parameter("slide", AnimatorParam::Trigger(false));
+        animator.add_parameter("is_sliding", AnimatorParam::Bool(false));
+        animator.add_parameter("attack", AnimatorParam::Trigger(false));
+        animator.add_parameter("hit", AnimatorParam::Trigger(false));
+        animator.add_parameter("defense", AnimatorParam::Trigger(false));
+        animator.add_parameter("is_alive", AnimatorParam::Bool(true));
+        animator.add_parameter("items", AnimatorParam::Trigger(false));
+        animator.add_parameter("is_facing_right", AnimatorParam::Bool(true));
+        animator.add_parameter("shift_press_time", AnimatorParam::Float(0.0));
+        animator.add_parameter("impulse_x", AnimatorParam::Float(0.0));
+        animator.add_parameter("revival", AnimatorParam::Trigger(false));
+    }
 
     animator.add_state(idle_state);
     animator.add_state(walk_state);

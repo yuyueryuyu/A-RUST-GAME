@@ -12,7 +12,7 @@ use bevy::{
 use crate::background;
 use crate::player;
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
 struct InGameCamera;
 
 const PIXEL_PERFECT_LAYERS: RenderLayers = RenderLayers::layer(0);
@@ -49,7 +49,7 @@ fn setup_camera(mut commands: Commands) {
 }
 
 // 定义相机跟随组件
-#[derive(Component)]
+#[derive(Component, Reflect)]
 pub struct CameraFollow {
     pub dead_zone_width: f32,
     pub soft_zone_width: f32,

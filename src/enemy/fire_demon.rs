@@ -7,8 +7,9 @@ use std::collections::HashSet;
 use crate::animator::Condition;
 use crate::animator::*;
 use crate::controller::ControllerBundle;
-use crate::damagable::Damagable;
+use crate::damagable::{Damagable, HitBox};
 use crate::game_layer::GameLayer;
+use crate::hint::ItemHint;
 use crate::physics::PhysicsBundle;
 use crate::player::Player;
 mod behaviour;
@@ -385,22 +386,39 @@ fn setup_animator() -> Animator {
     animator
 }
 
-#[derive(Component, Reflect)]
-pub struct FireGlove;
+#[derive(Event)]
+pub struct FireDemonDeath;
 
-fn set_death(commands: &mut Commands, entity: Entity, animator: &mut Animator
-    ,asset_server: &Res<AssetServer>, _audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
+fn on_fire_demon_death(
+    _trigger: Trigger<FireDemonDeath>,
+    mut commands: Commands,
+    demon: Single<(Entity, &Transform), With<FireDemon>>,
+    asset_server: Res<AssetServer>,
+) {
+    let (entity, transform) = demon.into_inner();
     commands.entity(entity).despawn_recursive();
     commands.spawn((
         Sprite {
             image: asset_server.load("Art/Kyrise's 16x16 RPG Icon Pack - V1.3/icons/16x16/gloves_01e.png"),
             ..default()
         },
-        Transform::from_xyz(1430.0, 27.1, 0.0),
+        Collider::rectangle(20.0, 20.0),
+        Transform::from_xyz(transform.translation.x, 27.1, 0.0),
         FireGlove,
+        ItemHint,
+        Sensor,
+        CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player])
     )
     );
+} 
+
+#[derive(Component, Reflect)]
+pub struct FireGlove;
+
+fn set_death(commands: &mut Commands, entity: Entity, animator: &mut Animator
+    ,asset_server: &Res<AssetServer>, _audio: &Res<Audio>
+    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
+    commands.trigger(FireDemonDeath);
 }
 
 fn set_not_attack(commands: &mut Commands, _entity: Entity, animator: &mut Animator
@@ -422,6 +440,7 @@ fn set_attack(commands: &mut Commands, entity: Entity, animator: &mut Animator
             Collider::rectangle(50., 20.),
             Transform::from_xyz(-80., -70., 0.),
             Sensor,
+            HitBox,
             collider_layer,
         ))
         .set_parent(entity)
@@ -450,6 +469,7 @@ fn set_boom(commands: &mut Commands, entity: Entity, animator: &mut Animator
             Collider::rectangle(80., 100.),
             Transform::from_xyz(0., -20., 0.),
             Sensor,
+            HitBox,
             collider_layer,
         ))
         .set_parent(entity)
@@ -570,20 +590,6 @@ fn on_move(mut query: Query<(&LinearVelocity, &mut Animator), With<FireDemon>>) 
     }
 }
 
-fn check_get(
-    mut commands: Commands,
-    glove: Query<(Entity, &Transform), With<FireGlove>>,
-    player: Single<(&mut Animator, &Transform), With<Player>>,
-) {
-    if let Ok((entity, gpos)) = glove.get_single() {
-        let (mut animator, ppos) = player.into_inner();
-        if (gpos.translation - ppos.translation).length() <= 5. {
-            animator.set_bool("can_wall_jump", true);
-            commands.entity(entity).despawn_recursive();
-        }
-    }
-}
-
 pub struct FireDemonPlugin<S: States> {
     pub state: S
 }
@@ -598,8 +604,8 @@ impl<S: States> Plugin for FireDemonPlugin<S> {
                 check_contact.run_if(in_state(self.state.clone())),
                 on_move.run_if(in_state(self.state.clone())),
                 on_flip_direction.run_if(in_state(self.state.clone())),
-                check_get.run_if(in_state(self.state.clone())),
             ),
         );
+        app.add_observer(on_fire_demon_death);
     }
 }

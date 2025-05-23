@@ -47,6 +47,9 @@ fn update_item(
     }
 }
 
+#[derive(Component)]
+pub struct Hint;
+
 fn spawn_box(
     mut commands: Commands, 
     asset_server: Res<AssetServer>,
@@ -57,6 +60,18 @@ fn spawn_box(
         justify_content: JustifyContent::Start,
         ..default()
     };
+
+    let hint_container = Node {
+        width: Val::Percent(40.),
+        height: Val::Px(100.),
+        justify_content: JustifyContent::Center,
+        left: Val::Percent(30.),
+        top: Val::Percent(80.),
+        position_type: PositionType::Absolute,
+        ..Default::default()
+    };
+
+    let hint = Text::new("");
 
     let health_bar_container = Node {
         width: Val::Percent(80.),
@@ -110,6 +125,12 @@ fn spawn_box(
         ..default()
     };
 
+    let big_font = TextFont {
+        font: asset_server.load("UI/Fonts/m5x7.ttf"),
+        font_size: 40.0,
+        ..default()
+    };
+
     let bar_color = Color::srgb(0.67, 0., 0.);
     let barbg_color = Color::srgb(0.3, 0.3, 0.3);
     let left_color = Color::srgb(0.7, 0.6, 0.3);
@@ -138,13 +159,21 @@ fn spawn_box(
         text_node,
     )).with_children(|parent| {
         parent.spawn((
-            text, font, Label, ItemNum { nums : 0 }
+            text, font.clone(), Label, ItemNum { nums : 0 }
+        ));
+    }).id();
+
+    let hint_node_entity = commands.spawn((
+        hint_container,
+    )).with_children(|parent| {
+        parent.spawn((
+            hint, big_font.clone(), Label, Hint
         ));
     }).id();
 
     commands
         .entity(ui_entity)
-        .add_children(&[healthbar_entity]);
+        .add_children(&[healthbar_entity, hint_node_entity]);
     commands.entity(healthbar_entity).add_children(&[left_entity, barbg_entity]);
     commands.entity(barbg_entity).add_children(&[bar_entity]);
     commands.entity(left_entity).add_children(&[item_entity, text_node_entity]);

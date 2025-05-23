@@ -23,6 +23,8 @@ mod items;
 mod menu;
 mod save;
 mod pause;
+mod hint;
+mod getitem;
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
 enum AppState {
@@ -35,6 +37,7 @@ enum PausedState {
     #[default]
     Running,
     Paused,
+    GetItem,
 }
 
 fn main() {
@@ -77,7 +80,11 @@ fn main() {
             state: AppState::MainMenu,
         })
         .add_plugins(pause::PausePlugin)
+        .add_plugins(getitem::GetItemPlugin)
         .add_plugins(items::ItemsPlugin {
+            state: AppState::InGame,
+        })
+        .add_plugins(hint::HintPlugin {
             state: AppState::InGame,
         })
         .add_plugins(save::SavingPlugin)

@@ -10,8 +10,11 @@ use bevy_kira_audio::prelude::*;
 
 use crate::animator::Animator;
 use crate::damagable::Damagable;
+use crate::healthbar::Hint;
 use crate::items::ItemList;
 use crate::player::Player;
+use crate::enemy::fire_demon::FireGlove;
+use crate::PausedState;
 
 const WALK_SPEED: f32 = 80.0;
 const RUN_SPEED: f32 = 120.0;
@@ -65,6 +68,7 @@ impl PlayerInputBundle {
         input_map.insert(Action::Attack, MouseButton::Left);
         input_map.insert(Action::Defense, MouseButton::Right);
         input_map.insert(Action::UseItem, KeyCode::KeyR);
+        input_map.insert(Action::PickItem, KeyCode::KeyE);
         input_map
     }
 }
@@ -82,6 +86,7 @@ enum Action {
     Attack,
     Defense,
     UseItem,
+    PickItem,
 }
 
 /** 每个动作对应的一些实用方法 */
@@ -240,6 +245,31 @@ fn on_use(
     }
 }
 
+fn on_pick(
+    mut collision_event_reader: EventReader<Collision>,
+    mut commands: Commands,
+    glove: Query<Entity, With<FireGlove>>,
+    mut player: Query<(&ActionState<Action>, &mut Animator), With<Player>>,
+    mut text: Single<&mut Text, With<Hint>>,
+    mut next_state: ResMut<NextState<PausedState>>,
+) {
+    for Collision(contact) in collision_event_reader.read() {
+        let entity1 = contact.entity1;
+        let entity2 = contact.entity2;
+        if (glove.contains(entity1) && player.contains(entity2)) ||
+           (glove.contains(entity2) && player.contains(entity1)) {
+            let (action_state, mut animator) = player.single_mut();
+            let entity = glove.single();
+            if action_state.just_pressed(&Action::PickItem) {
+                animator.set_bool("can_wall_jump", true);
+                commands.entity(entity).despawn_recursive();
+                text.0 = "".to_string();
+                next_state.set(PausedState::GetItem);
+            }
+        }
+    }
+}
+
 pub struct PlayerInputPlugin<S: States> {
     pub state: S,
 }
@@ -258,6 +288,7 @@ impl<S: States> Plugin for PlayerInputPlugin<S> {
                 on_slide.run_if(in_state(self.state.clone())),
                 on_defense.run_if(in_state(self.state.clone())),
                 on_use.run_if(in_state(self.state.clone())),
+                on_pick.run_if(in_state(self.state.clone())),
             )
         );
     }

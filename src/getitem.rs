@@ -1,0 +1,153 @@
+use bevy::prelude::*;
+use moonshine_save::load;
+
+use crate::animator::Animator;
+use crate::damagable::Damagable;
+use crate::player::Player;
+use crate::{AppState, PausedState};
+use crate::save::load;
+use crate::save::{trigger_save, LoadRequest, SaveRequest};
+#[derive(Component)]
+pub struct MenuItem {
+    pub id: i32,
+    pub is_selected: bool,
+}
+
+#[derive(Component)]
+pub struct UI;
+
+fn spawn_box(
+    mut commands: Commands, 
+    asset_server: Res<AssetServer>,
+) {
+    let ui_container = Node {
+        width: Val::Percent(100.0),
+        height: Val::Percent(100.0),
+        justify_content: JustifyContent::Center,
+        ..default()
+    };
+
+    let title_node = Node {
+        position_type: PositionType::Absolute,
+        width: Val::Percent(100.),
+        height: Val::Percent(50.),
+        top: Val::Percent(15.),
+        justify_content: JustifyContent::Center,
+        //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
+        ..default()
+    };
+    let title = ImageNode::new(asset_server.load("Art/Kyrise's 16x16 RPG Icon Pack - V1.3/icons/32x32/gloves_01e.png"));
+    let color = Color::srgb(0., 0., 0.).with_alpha(0.7);
+    let desc_node = Node {
+        position_type: PositionType::Absolute,
+        width: Val::Percent(100.),
+        height: Val::Percent(20.),
+        top: Val::Percent(68.),
+        justify_content: JustifyContent::Center,
+        //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
+        ..default()
+    };
+    
+    
+    let start_node = Node {
+        position_type: PositionType::Absolute,
+        width: Val::Percent(100.),
+        height: Val::Percent(10.),
+        top: Val::Percent(83.),
+        justify_content: JustifyContent::Center,
+        //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
+        ..default()
+    };
+    
+    let start_text = Text::new("[ Continue ]");
+
+    let desc_text = Text::new("Fire Glove: [Jump on Wall]");
+   
+    let font = TextFont {
+        font: asset_server.load("UI/Fonts/m5x7.ttf"),
+        font_size: 80.0,
+        ..default()
+    };
+
+    let sfont = TextFont {
+        font: asset_server.load("UI/Fonts/m5x7.ttf"),
+        font_size: 60.0,
+        ..default()
+    };
+    
+    let ui_entity = commands.spawn((ui_container, BackgroundColor(color), UI)).id();
+    
+    let title_entity = commands.spawn((
+        title_node,
+    )).with_children(|parent| {
+        parent.spawn(
+            title
+        );
+    }).id();
+    
+    let desc_node_entity = commands.spawn((
+        desc_node,
+    )).with_children(|parent| {
+        parent.spawn((
+            desc_text, sfont.clone(), Label
+        ));
+    }).id();
+
+    let start_node_entity = commands.spawn((
+        start_node,
+    )).with_children(|parent| {
+        parent.spawn((
+            start_text, font.clone(), Label, MenuItem { id: 0, is_selected : true }
+        ));
+    }).id();
+
+
+    commands
+        .entity(ui_entity)
+        .add_children(&[title_entity, desc_node_entity, start_node_entity]);
+    //commands.entity(text_node_entity).add_children(&[text_entity]);
+}
+
+fn handle_enter(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    items: Query<&MenuItem>,
+    mut commands: Commands,
+    ui: Query<Entity, With<UI>>,
+    mut next_state: ResMut<NextState<PausedState>>,
+    mut exit_events: EventWriter<AppExit>,
+    save_events: EventWriter<SaveRequest>,
+    load_events: EventWriter<LoadRequest>,
+    mut player: Single<(&mut Transform, &mut Animator, &mut Damagable), With<Player>>,
+) {
+    if keyboard_input.just_pressed(KeyCode::Enter) {
+        for item in &items {
+            if item.is_selected {
+                if item.id == 0 {
+                    if let Ok(entity) = ui.get_single() {
+                        commands.entity(entity).despawn_recursive();
+                    }
+                    next_state.set(PausedState::Running);
+                } 
+                break;
+            }
+        }
+    } else if keyboard_input.just_pressed(KeyCode::Escape) {
+        if let Ok(entity) = ui.get_single() {
+            commands.entity(entity).despawn_recursive();
+        }
+        next_state.set(PausedState::Running);
+    }
+}
+
+pub struct GetItemPlugin;
+
+impl Plugin for GetItemPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(OnEnter(PausedState::GetItem), (
+            spawn_box.run_if(in_state(PausedState::GetItem)),
+        ));
+        app.add_systems(Update, (
+            handle_enter.run_if(in_state(PausedState::GetItem)),
+        ));
+    }
+}

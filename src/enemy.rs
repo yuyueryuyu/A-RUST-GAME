@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 mod skeleton;
-mod fire_demon;
+pub(crate) mod fire_demon;
 
 pub struct EnemyPlugin<S: States> {
     pub state: S,

@@ -7,7 +7,7 @@ use std::collections::HashSet;
 use crate::animator::Condition;
 use crate::animator::*;
 use crate::controller::ControllerBundle;
-use crate::damagable::Damagable;
+use crate::damagable::{Damagable, HitBox};
 use crate::game_layer::GameLayer;
 use crate::physics::PhysicsBundle;
 use crate::player::Player;
@@ -424,6 +424,7 @@ fn set_attack(commands: &mut Commands, entity: Entity, animator: &mut Animator
             Collider::rectangle(30., 10.),
             Transform::from_xyz(30., 0., 0.),
             Sensor,
+            HitBox,
             collider_layer,
         ))
         .set_parent(entity)

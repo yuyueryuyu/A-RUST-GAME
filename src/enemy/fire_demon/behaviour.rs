@@ -8,6 +8,7 @@ use bevy_tnua::math::*;
 use bevy_tnua::prelude::*;
 use big_brain::prelude::*;
 use rand::Rng;
+use bevy::ecs::{system::Commands, entity::Entity};
 
 const WALK_SPEED: f32 = 20.0;
 const NOTICED_SPEED: f32 = 40.0;
@@ -61,7 +62,7 @@ pub fn notice_system(time: Res<Time>, mut query: Query<(&mut Notice, &Animator),
     }
 }
 
-#[derive(Clone, Component, Debug, ActionBuilder, Reflect)]
+#[derive(Clone, Component, Debug, Reflect, ActionBuilder)]
 pub struct MoveToPlayer;
 
 const CLOSE_MAX_DISTANCE: f32 = 80.;

@@ -154,10 +154,12 @@ fn check_death(time: Res<Time>, mut query: Query<(&mut Animator, &mut Damagable,
         }
     }
 }
+#[derive(Component)]
+pub struct HitBox;
 
 fn check_hitbox(
     collisions: Res<Collisions>,
-    hitbox_query: Query<(Entity, &Parent), With<Sensor>>,
+    hitbox_query: Query<(Entity, &Parent), With<HitBox>>,
     attacker_query: Query<&Transform>,
     mut actor_query: Query<(
         Entity,

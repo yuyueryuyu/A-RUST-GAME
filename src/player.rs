@@ -44,6 +44,7 @@ fn setup_player(
             GameLayer::Default,
             GameLayer::Ground,
             GameLayer::EnemyHitBox,
+            GameLayer::Sensor,
         ],
     );
     let item_list = ItemList {
@@ -79,9 +80,10 @@ fn setup_player(
         item_list,
         transform_data.damagable.clone(),
     ));
+
 }
 
-#[derive(Component, Reflect)]
+#[derive(Reflect)]
 enum AnimationType {
     AirAttack1,
     AirAttack2,
@@ -1136,8 +1138,8 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
             },
         ],
         loop_animation: false,
-        on_enter: Some(set_cant_move),
-        on_exit: Some(set_can_move),
+        on_enter: Some(set_item),
+        on_exit: Some(set_not_item),
         ..default()
     };
 
@@ -1271,6 +1273,7 @@ fn set_attack(mut commands: &mut Commands, entity: Entity, animator: &mut Animat
             Collider::rectangle(30., 10.),
             Transform::from_xyz(10., 0., 0.),
             Sensor,
+            HitBox,
             collider_layer,
         ))
         .set_parent(entity)
@@ -1288,6 +1291,20 @@ fn set_cant_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut A
     ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
     , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
     animator.set_bool("can_move", false);
+}
+
+fn set_item(mut commands: &mut Commands, _entity: Entity, animator: &mut Animator
+    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
+    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
+    commands.trigger(ItemEvent);
+    animator.set_bool("can_move", false);
+}
+
+fn set_not_item(mut commands: &mut Commands, _entity: Entity, animator: &mut Animator
+    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
+    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
+    animator.set_bool("can_move", true);
+    commands.trigger(ItemExitEvent);
 }
 
 fn set_jump(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
@@ -1323,7 +1340,7 @@ fn set_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animat
     animator.audio = Some(handle);
 }
 
-fn set_not_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
+fn set_not_move(mut commands: &mut Commands, _entity: Entity, animator: &mut Animator
     ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
     , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
     if let Some(audio) = &animator.audio {
@@ -1367,6 +1384,43 @@ fn check_contact(
     );
     animator.set_bool("is_on_wall", hits_wall.length() > 0 && !is_grounded);
 }
+#[derive(Component)]
+pub struct ItemImg;
+
+#[derive(Event)]
+pub struct ItemEvent;
+
+fn on_item(
+    _trigger: Trigger<ItemEvent>,
+    mut commands: Commands,
+    player: Single<Entity, With<Player>>,
+    asset_server: Res<AssetServer>,
+) {
+    let item_p: Handle<Image> = asset_server.load("Art/Kyrise's 16x16 RPG Icon Pack - V1.3/icons/16x16/potion_02a.png");
+    let item = commands.spawn((
+        Sprite {
+            image: item_p,
+            ..default()
+        },
+        Transform::from_xyz(10.,10.,0.).with_scale(Vec3::new(0.8, 0.8, 0.8)),
+        ItemImg
+    )).id(); 
+    commands.entity(player.into_inner()).add_child(item);
+} 
+#[derive(Event)]
+pub struct ItemExitEvent;
+fn on_item_exit(
+    _trigger: Trigger<ItemExitEvent>,
+    mut commands: Commands,
+    player: Query<Entity, With<ItemImg>>,
+) {
+    println!("1");
+    for entity in &player {
+        commands.entity(entity).despawn_recursive();
+        println!("2");
+    }
+} 
+
 
 pub struct PlayerPlugin<S: States> {
     pub state: S,
@@ -1377,5 +1431,7 @@ impl<S: States> Plugin for PlayerPlugin<S> {
         app.add_plugins(input::PlayerInputPlugin { state: self.state.clone() });
         app.add_systems(OnEnter(self.state.clone()), setup_player.run_if(in_state(self.state.clone())));
         app.add_systems(FixedUpdate, check_contact.run_if(in_state(self.state.clone())));
+        app.add_observer(on_item);
+        app.add_observer(on_item_exit);
     }
 }

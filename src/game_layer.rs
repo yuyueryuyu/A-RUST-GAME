@@ -8,5 +8,6 @@ pub enum GameLayer {
     EnemyHitBox,
     Player,  // Layer 1
     Enemy,   // Layer 2
+    Sensor,
     Ground,  // Layer 3
 }

@@ -1,10 +1,9 @@
 use bevy::prelude::*;
-use bevy_kira_audio::{Audio, AudioInstance};
+use bevy_kira_audio::{Audio, AudioControl, AudioInstance};
 use serde::{Deserialize, Serialize};
 use std::collections::{
     HashMap, HashSet
 };
-use std::hash::Hash;
 use std::time::Duration;
 
 // 动画参数类型
@@ -35,6 +34,16 @@ pub struct Condition {
     pub value: AnimatorParam,
 }
 
+impl Condition {
+    pub fn new(param: String, op: ConditionOperator, value: AnimatorParam) -> Self {
+        Self {
+            param_name: param,
+            operator: op,
+            value: value,
+        }
+    }
+}
+
 // 状态转换
 #[derive(Debug, Clone)]
 pub struct Transition {
@@ -52,8 +61,9 @@ pub struct AnimationState {
     pub last_index: usize,
     pub transitions: Vec<Transition>,
     pub loop_animation: bool,
-    pub on_enter: Option<fn(&mut Commands, Entity, &mut Animator, &Res<AssetServer>, &Res<Audio>, &mut ResMut<Assets<AudioInstance>>)>, // 进入状态时的回调
-    pub on_exit: Option<fn(&mut Commands, Entity, &mut Animator, &Res<AssetServer>, &Res<Audio>, &mut ResMut<Assets<AudioInstance>>)>,  // 退出状态时的回调
+    pub on_enter: Option<fn(&mut Commands, Entity)>, // 进入状态时的回调
+    pub on_exit: Option<fn(&mut Commands, Entity)>,  // 退出状态时的回调
+    pub audio_path: Option<String>,
 }
 
 impl Default for AnimationState {
@@ -66,6 +76,7 @@ impl Default for AnimationState {
             loop_animation: false,
             on_enter: None,
             on_exit: None,
+            audio_path: None,
         }
     }
 }
@@ -84,8 +95,6 @@ pub struct Animator {
     pub normalized_time: f32,
     active_triggers: HashSet<String>, // 当前激活的trigger集合
     consumed_triggers: HashSet<String>, // 已消费的trigger集合
-    pub active_children: HashSet<Entity>,
-    pub audio: Option<Handle<AudioInstance>>,
 }
 
 impl Animator {
@@ -102,8 +111,6 @@ impl Animator {
             normalized_time: 0.0,
             active_triggers: HashSet::new(),
             consumed_triggers: HashSet::new(),
-            active_children: HashSet::new(),
-            audio: None,
         }
     }
 
@@ -196,10 +203,6 @@ impl Animator {
         0.0
     }
 
-    pub fn push_active_child(&mut self, entity: Entity) {
-        self.active_children.insert(entity);
-    }
-
     // 设置Trigger参数
     pub fn set_trigger(&mut self, name: &str) {
         if let Some(param) = self.parameters.get_mut(name) {
@@ -275,9 +278,7 @@ impl Animator {
     pub fn update(
         &mut self, commands: &mut Commands, 
         entity: Entity, delta: Duration, atlas: &mut TextureAtlas,
-        asset_server: &Res<AssetServer>, audio: &Res<Audio>,
-        audio_instances: &mut ResMut<Assets<AudioInstance>>,
-    ) {
+    ) -> bool {
 
         let target_clone = self.target_state.clone();
 
@@ -286,7 +287,7 @@ impl Animator {
 
             if let Some(state) = self.states.get(&self.current_state) {
                 if let Some(on_exit) = state.on_exit {
-                    on_exit(commands, entity, self, asset_server, audio, audio_instances);
+                    on_exit(commands, entity);
                 }
             }
 
@@ -303,7 +304,7 @@ impl Animator {
 
             if let Some(state) = self.states.get(&self.current_state) {
                 if let Some(on_enter) = state.on_enter {
-                    on_enter(commands, entity, self, asset_server, audio, audio_instances);
+                    on_enter(commands, entity);
                 }
             }
             
@@ -316,9 +317,10 @@ impl Animator {
             self.consumed_triggers.clear();
             
             
-            return;
+            return true;
         }
 
+        let mut result = false;
         let states_clone = self.states.clone();
         
         // 更新当前状态的归一化时间
@@ -342,6 +344,7 @@ impl Animator {
                     // ...and it IS the last frame, then we move back to the first frame and stop.
                     if self.normalized_time < 1.0 {
                         atlas.index = self.first_index;
+                        result = true;
                     }
                 } else {
                     // ...and it is NOT the last frame, then we move to the next frame...
@@ -376,6 +379,14 @@ impl Animator {
                 }
             }
         }
+        return result;
+    }
+
+    pub fn get_cur_audio(&self) -> Option<String> {
+        if let Some(state) = self.states.get(&self.current_state) {
+            return state.audio_path.clone();
+        }
+        return None;
     }
 
     pub fn timer_from_fps(&mut self) -> Timer {
@@ -389,13 +400,18 @@ fn update_animators(
     time: Res<Time>,
     asset_server: Res<AssetServer>, 
     audio: Res<Audio>,
-    mut audio_instances: ResMut<Assets<AudioInstance>>,
     mut query: Query<(Entity, &mut Animator, &mut Sprite)>,
 ) {
     for (entity, mut animator, mut sprite) in &mut query {
         // 更新动画状态机
         if let Some(atlas) = &mut sprite.texture_atlas {
-            animator.update(&mut commands, entity, time.delta(), atlas, &asset_server, &audio, &mut audio_instances);
+            let result = animator.update(&mut commands, entity, time.delta(), atlas);
+            if !result {
+                continue;
+            }
+            if let Some(path) = animator.get_cur_audio() {
+                audio.play(asset_server.load(path));
+            }
         }
 
     }

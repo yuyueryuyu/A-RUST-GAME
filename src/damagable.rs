@@ -1,4 +1,4 @@
-use crate::{animator::*, save::load};
+use crate::{animator::*, damagable, save::load};
 use avian2d::prelude::*;
 use bevy::{prelude::*, state::commands};
 use bevy_kira_audio::{Audio, AudioControl};
@@ -154,64 +154,53 @@ fn check_death(time: Res<Time>, mut query: Query<(&mut Animator, &mut Damagable,
         }
     }
 }
-#[derive(Component)]
-pub struct HitBox;
 
-fn check_hitbox(
-    collisions: Res<Collisions>,
-    hitbox_query: Query<(Entity, &Parent), With<HitBox>>,
-    attacker_query: Query<&Transform>,
-    mut actor_query: Query<(
-        Entity,
+
+#[derive(Component)]
+#[relationship(relationship_target = HasHitbox)]
+pub struct HitboxOf(pub Entity);
+
+#[derive(Component, Deref)]
+#[relationship_target(relationship = HitboxOf)]
+pub struct HasHitbox(Vec<Entity>);
+
+#[derive(Component)]
+pub struct HitBox {
+    pub damage: f32,
+}
+
+pub fn check_hitbox(
+    trigger: Trigger<OnCollisionStart>,
+    hitbox_query: Query<(&GlobalTransform, &HitBox)>,
+    mut damaged_query: Query<(
         &mut Damagable,
         &mut Animator,
         &mut TnuaController,
-        &Transform,
+        &GlobalTransform,
     )>,
     asset_server: Res<AssetServer>, audio: Res<Audio>
 ) {
-    for (hitbox_entity, hitbox_parent) in &hitbox_query {
-        for (damaged_entity, mut damagable, mut animator, mut controller, damaged_trans) in
-        &mut actor_query
-        {
-
-            if let Ok(
-                attacker_trans,
-            ) = attacker_query.get(**hitbox_parent) { 
-                if collisions.contains(damaged_entity, hitbox_entity)
-                || collisions.contains(hitbox_entity, damaged_entity)
-                {
-                    
-                    let dir = if (damaged_trans.translation - attacker_trans.translation).x >= 0. {
-                        1.
-                    } else {
-                        -1.
-                    };
-
-                    if !damagable.is_invincible && !damagable.is_defending && damagable.is_alive {
-                        animator.set_trigger("hit");
-
-                        controller.action(TnuaBuiltinKnockback {
-                            shove: Vec3::new(50., 0., 0.) * dir,
-                            ..Default::default()
-                        });
-                        audio.play(asset_server.load(
-                            "Audio/SFX/12_Player_Movement_SFX/61_Hit_03.wav"));
-    
-                    } else if damagable.is_defending {
-                        controller.action(TnuaBuiltinKnockback {
-                            shove: Vec3::new(10., 0., 0.) * dir,
-                            ..Default::default()
-                        });
-                    }
-
-                    damagable.take_hit(1000.);
-                }
-
-            }
-            
-        }
+    let hitbox_entity = trigger.target();
+    let damaged_entity = trigger.collider;
+    let (hitbox_trans, hitbox) = hitbox_query.get(hitbox_entity).unwrap();
+    let (mut damagable, mut animator, mut controller, damaged_trans) = damaged_query.get_mut(damaged_entity).unwrap();
+    let delta_x = damaged_trans.translation().x - hitbox_trans.translation().x;
+    let dir = if delta_x >= 0. { 1. } else { -1. };
+    if !damagable.is_invincible && !damagable.is_defending && damagable.is_alive {
+        animator.set_trigger("hit");
+        controller.action(TnuaBuiltinKnockback {
+            shove: Vec3::new(50., 0., 0.) * dir,
+            ..Default::default()
+        });
+        audio.play(asset_server.load(
+            "Audio/SFX/12_Player_Movement_SFX/61_Hit_03.wav"));
+    } else if damagable.is_defending {
+        controller.action(TnuaBuiltinKnockback {
+            shove: Vec3::new(10., 0., 0.) * dir,
+            ..Default::default()
+        });
     }
+    damagable.take_hit(hitbox.damage);
 }
 
 pub struct DamagePlugin<S: States> {
@@ -222,7 +211,6 @@ impl<S: States> Plugin for DamagePlugin<S> {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, (
             check_invincible.run_if(in_state(self.state.clone())), 
-            check_hitbox.run_if(in_state(self.state.clone())), 
             check_defending.run_if(in_state(self.state.clone())),
             check_death.run_if(in_state(self.state.clone())),
         ));

@@ -20,16 +20,18 @@ fn setup_tilesets(mut commands: Commands, asset_server: Res<AssetServer>) {
 struct MyCustomAvianPhysicsBackend(TiledPhysicsAvianBackend);
 
 impl TiledPhysicsBackend for MyCustomAvianPhysicsBackend {
+
     fn spawn_colliders(
         &self,
         commands: &mut Commands,
         tiled_map: &TiledMap,
         filter: &TiledNameFilter,
         collider: &TiledCollider,
+        anchor: &TilemapAnchor,
     ) -> Vec<TiledColliderSpawnInfos> {
         let colliders = self
             .0
-            .spawn_colliders(commands, tiled_map, filter, collider);
+            .spawn_colliders(commands, tiled_map, filter, collider, anchor);
         let collider_layer = CollisionLayers::new(
             GameLayer::Ground,
             [GameLayer::Default, GameLayer::Player, GameLayer::Enemy],

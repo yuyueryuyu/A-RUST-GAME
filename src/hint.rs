@@ -29,7 +29,8 @@ fn spawn_hint_colliders(
         Sensor,
         WASDHint,
         Transform::from_xyz(125.0, 45.1, 0.),
-        CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player])
+        CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player]),
+        CollisionEventsEnabled,
     ));
 
     commands.spawn((
@@ -37,7 +38,8 @@ fn spawn_hint_colliders(
         Sensor,
         BattleHint,
         Transform::from_xyz(185.0, 45.1, 0.),
-        CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player])
+        CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player]),
+        CollisionEventsEnabled,
     ));
 
     commands.spawn((
@@ -45,7 +47,8 @@ fn spawn_hint_colliders(
         Sensor,
         JumpHint,
         Transform::from_xyz(545.0, 45.1, 0.),
-        CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player])
+        CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player]),
+        CollisionEventsEnabled,
     ));
 
     commands.spawn((
@@ -53,7 +56,8 @@ fn spawn_hint_colliders(
         Sensor,
         SlideHint,
         Transform::from_xyz(171.0, 428.0, 0.),
-        CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player])
+        CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player]),
+        CollisionEventsEnabled,
     ));
 
     commands.spawn((
@@ -61,7 +65,8 @@ fn spawn_hint_colliders(
         Sensor,
         UseHint,
         Transform::from_xyz(898.0, 45.0, 0.),
-        CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player])
+        CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player]),
+        CollisionEventsEnabled,
     ));
 }
 

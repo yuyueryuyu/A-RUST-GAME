@@ -3,22 +3,28 @@ name = "my_bevy_game"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+proc-macro = true
+
 [dependencies]
-bevy = { version = "0.15.3" , features = ["serialize"] }
-avian2d = { version = "0.2" }
-leafwing-input-manager = { version = "0.16" }
-bevy-inspector-egui = { version = "0.30.0" }
-bevy_ecs_tiled =  { version = "0.6", features = [ "user_properties","physics","avian" ] }
-bevy_ecs_tilemap = { version = "0.15" }
-tiled = "0.13.0"
-big-brain = "0.22.0"
-bevy-tnua-physics-integration-layer = "0.5"
-bevy-tnua = "0.21.0"
-bevy-tnua-avian2d = "0.2"
-bevy_kira_audio = { version = "0.22.0", features = [ "mp3", "wav" ]}
-moonshine-save = "0.3.10"
+bevy = { version = "0.16.1" , features = ["serialize"] }
+avian2d = { version = "0.3.1" }
+leafwing-input-manager = { version = "0.17" }
+bevy-inspector-egui = { version = "0.31.0" }
+bevy_ecs_tiled =  { version = "0.7", features = [ "user_properties","physics","avian" ] }
+bevy_ecs_tilemap = { version = "0.16" }
+tiled = "0.14.0"
+big-brain = { git = "https://github.com/zkat/big-brain.git", branch = "main" }
+bevy-tnua-physics-integration-layer = "0.8"
+bevy-tnua = "0.24.0"
+bevy-tnua-avian2d = "0.5"
+bevy_kira_audio = { version = "0.23.0", features = [ "mp3", "wav" ]}
+moonshine-save = "0.4.3"
 serde = "1.0.219"
 rand = "0.9.1"
+proc-macro2 = "1.0.95"
+quote = "1.0.40"
+syn = { version = "2.0", features = ["full"] }
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
 opt-level = 1

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 use avian2d::prelude::*;
 use bevy_tnua::prelude::*;
 use bevy_tnua_avian2d::TnuaAvian2dPlugin;
@@ -44,6 +44,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugins(AudioPlugin)
+        .add_plugins(EguiPlugin { enable_multipass_for_primary_context: true })
         .add_plugins(WorldInspectorPlugin::new())
         .add_plugins(PhysicsPlugins::default())
         .add_plugins(PhysicsDebugPlugin::default())

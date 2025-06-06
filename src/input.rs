@@ -75,7 +75,7 @@ impl PlayerInputBundle {
 
 /** 键位对应的动作 */
 #[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
-enum Action {
+pub enum Action {
     Up,
     Down,
     Left,
@@ -245,28 +245,21 @@ fn on_use(
     }
 }
 
-fn on_pick(
-    mut collision_event_reader: EventReader<Collision>,
+pub fn on_pick(
+    mut trigger: Trigger<OnCollisionStart>,
     mut commands: Commands,
-    glove: Query<Entity, With<FireGlove>>,
-    mut player: Query<(&ActionState<Action>, &mut Animator), With<Player>>,
+    mut player_single: Single<(&ActionState<Action>, &mut Animator), With<Player>>,
     mut text: Single<&mut Text, With<Hint>>,
     mut next_state: ResMut<NextState<PausedState>>,
 ) {
-    for Collision(contact) in collision_event_reader.read() {
-        let entity1 = contact.entity1;
-        let entity2 = contact.entity2;
-        if (glove.contains(entity1) && player.contains(entity2)) ||
-           (glove.contains(entity2) && player.contains(entity1)) {
-            let (action_state, mut animator) = player.single_mut();
-            let entity = glove.single();
-            if action_state.just_pressed(&Action::PickItem) {
-                animator.set_bool("can_wall_jump", true);
-                commands.entity(entity).despawn_recursive();
-                text.0 = "".to_string();
-                next_state.set(PausedState::GetItem);
-            }
-        }
+    let item = trigger.target();
+    let player = trigger.collider;
+    let (action_state, mut animator) = player_single.into_inner();
+    if action_state.just_pressed(&Action::PickItem) {
+        animator.set_bool("can_wall_jump", true);
+        commands.entity(item).despawn();
+        text.0 = "".to_string();
+        next_state.set(PausedState::GetItem);
     }
 }
 
@@ -288,7 +281,6 @@ impl<S: States> Plugin for PlayerInputPlugin<S> {
                 on_slide.run_if(in_state(self.state.clone())),
                 on_defense.run_if(in_state(self.state.clone())),
                 on_use.run_if(in_state(self.state.clone())),
-                on_pick.run_if(in_state(self.state.clone())),
             )
         );
     }

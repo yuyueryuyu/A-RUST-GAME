@@ -13,14 +13,26 @@ impl ItemList {
     pub fn use_item(&mut self, user: Entity) {
         self.items[self.item_now].use_item(user);
     }
+
+    pub fn get_current_item(&self) -> Item {
+        self.items[self.item_now].clone()
+    }
 }
+
+#[derive(Component)]
+#[relationship(relationship_target = HasItem)]
+pub struct ItemOf(pub Entity);
+
+#[derive(Component, Deref)]
+#[relationship_target(relationship = ItemOf)]
+pub struct HasItem(Vec<Entity>);
 
 #[derive(Clone, Copy, Reflect, Serialize, Deserialize)]
 pub enum ItemType {
     HealthPotion,
 }
 
-#[derive(Reflect, Serialize, Deserialize)]
+#[derive(Reflect, Serialize, Deserialize, Clone)]
 pub struct Item {
     pub item_type: ItemType,
     pub texture_path: String,
@@ -37,6 +49,7 @@ impl Item {
             user: None
         }
     }
+
     pub fn use_item(&mut self, user: Entity) {
         if self.nums > 0 {
             self.user = Some(user);
@@ -61,7 +74,7 @@ fn use_item_system(
     let list = &mut item_list.into_inner();
     for item in &mut list.items {
         if let Some(user) = item.user {
-            ev_use_item.send(UseItemEvent {
+            ev_use_item.write(UseItemEvent {
                 item_type: item.item_type.clone(),
                 user: user
             });

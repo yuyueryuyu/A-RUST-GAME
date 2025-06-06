@@ -7,6 +7,8 @@ use bevy_kira_audio::AudioInstance;
 use bevy_kira_audio::AudioTween;
 use bevy_tnua::prelude::*;
 use moonshine_save::save::Save;
+use my_bevy_game::enter;
+use my_bevy_game::exit;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::process::CommandArgs;
@@ -15,11 +17,14 @@ use crate::animator::Condition;
 use crate::animator::*;
 use crate::damagable::*;
 use crate::game_layer::GameLayer;
+use crate::healthbar::ItemImg;
 use crate::input;
 use crate::input::*;
 use crate::controller::*;
+use crate::items::HasItem;
 use crate::items::Item;
 use crate::items::ItemList;
+use crate::items::ItemOf;
 use crate::items::ItemType;
 use crate::physics::*;
 use crate::save::TransformData;
@@ -418,8 +423,7 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
             },
         ],
         loop_animation: true,
-        on_enter: Some(set_move),
-        on_exit: Some(set_not_move),
+        audio_path: Some("Audio/SFX/12_Player_Movement_SFX/03_Step_grass_03.wav".to_string()),
         ..default()
     };
 
@@ -540,8 +544,7 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
             },
         ],
         loop_animation: true,
-        on_enter: Some(set_move),
-        on_exit: Some(set_not_move),
+        audio_path: Some("Audio/SFX/12_Player_Movement_SFX/03_Step_grass_03.wav".to_string()),
         ..default()
     };
 
@@ -722,6 +725,7 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
             },
         ],
         loop_animation: true,
+        audio_path: Some("Audio/SFX/12_Player_Movement_SFX/03_Step_grass_03.wav".to_string()),
         ..default()
     };
 
@@ -862,7 +866,7 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
             },
         ],
         loop_animation: true,
-        on_exit: Some(set_landing),
+        on_exit: Some(__fall_exit_handler),
         ..default()
     };
 
@@ -886,7 +890,7 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
             has_exit_time: false,
             exit_time: 0.0,
         },],
-        on_enter: Some(set_jump),
+        on_enter: Some(__jump_enter_handler),
         loop_animation: false,
         ..default()
     };
@@ -902,8 +906,8 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
             exit_time: 2.0,
         }],
         loop_animation: false,
-        on_enter: Some(set_cant_move),
-        on_exit: Some(set_can_move),
+        on_enter: Some(__slide_enter_handler),
+        on_exit: Some(__slide_exit_handler),
         ..default()
     };
 
@@ -920,7 +924,7 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
             },
         ],
         loop_animation: false,
-        on_enter: Some(set_cant_move),
+        on_enter: Some(__stun_enter_handler),
         on_exit: None,
         ..default()
     };
@@ -938,8 +942,8 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
             },
         ],
         loop_animation: false,
-        on_enter: Some(set_attack),
-        on_exit: Some(set_not_attack),
+        on_enter: Some(__attack_enter_handler),
+        on_exit: Some(__attack_exit_handler),
         ..default()
     };
 
@@ -967,7 +971,8 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
         ],
         loop_animation: false,
         on_enter: None,
-        on_exit: Some(set_can_move),
+        on_exit: Some(__stun_exit_handler),
+        audio_path: Some("Audio/SFX/10_Battle_SFX/39_Block_03.wav".to_string()),
         ..default()
     };
 
@@ -984,7 +989,7 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
             },
         ],
         loop_animation: false,
-        on_enter: Some(set_cant_move),
+        on_enter: Some(__stun_enter_handler),
         on_exit: None,
         ..default()
     };
@@ -1002,8 +1007,9 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
             },
         ],
         loop_animation: false,
-        on_enter: Some(set_attack),
-        on_exit: Some(set_not_attack),
+        on_enter: Some(__attack_enter_handler),
+        on_exit: Some(__attack_exit_handler),
+        audio_path: Some("Audio/SFX/10_Battle_SFX/39_Block_03.wav".to_string()),
         ..default()
     };
 
@@ -1021,7 +1027,7 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
         ],
         loop_animation: false,
         on_enter: None,
-        on_exit: Some(set_can_move),
+        on_exit: Some(__stun_exit_handler),
         ..default()
     };
 
@@ -1036,8 +1042,8 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
             exit_time: 3.0,
         }],
         loop_animation: false,
-        on_enter: Some(set_cant_move),
-        on_exit: Some(set_can_move),
+        on_enter: Some(__stun_enter_handler),
+        on_exit: Some(__stun_exit_handler),
         ..default()
     };
 
@@ -1056,8 +1062,8 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
             exit_time: 0.0,
         }],
         loop_animation: false,
-        on_enter: Some(set_cant_move),
-        on_exit:  None,
+        on_enter: Some(__stun_enter_handler),
+        on_exit: None,
         ..default()
     };
 
@@ -1076,7 +1082,7 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
             exit_time: 0.0,
         }],
         loop_animation: false,
-        on_enter: Some(set_cant_move),
+        on_enter: Some(__stun_enter_handler),
         on_exit: None,
         ..default()
     };
@@ -1093,7 +1099,7 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
         }],
         loop_animation: false,
         on_enter: None,
-        on_exit: Some(set_can_move),
+        on_exit: Some(__stun_exit_handler),
         ..default()
     };
 
@@ -1120,8 +1126,8 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
             },
         ],
         loop_animation: false,
-        on_enter: Some(set_cant_move),
-        on_exit: Some(set_can_move),
+        on_enter: Some(__stun_enter_handler),
+        on_exit: Some(__stun_exit_handler),
         ..default()
     };
 
@@ -1138,8 +1144,8 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
             },
         ],
         loop_animation: false,
-        on_enter: Some(set_item),
-        on_exit: Some(set_not_item),
+        on_enter: Some(__item_enter_handler),
+        on_exit: Some(__item_exit_handler),
         ..default()
     };
 
@@ -1249,110 +1255,108 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
     animator
 }
 
-fn set_not_attack(mut commands: &mut Commands, _entity: Entity, animator: &mut Animator
-    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-    for child in animator.active_children.iter() {
-        commands.entity(*child).despawn_recursive();
-    }
-
-    animator.active_children = HashSet::new();
-}
-
-fn set_attack(mut commands: &mut Commands, entity: Entity, animator: &mut Animator
-    ,asset_server: &Res<AssetServer>, audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-        audio.play(asset_server.load(
-            "Audio/SFX/10_Battle_SFX/39_Block_03.wav"));
-    for child in animator.active_children.iter() {
-        commands.entity(*child).despawn_recursive();
-    }
-    let collider_layer = CollisionLayers::new(GameLayer::PlayerHitBox, [GameLayer::Enemy]);
-    let id = commands
-        .spawn((
+#[enter("attack")]
+fn on_attack_enter(
+    mut commands: Commands
+) {
+    let entity = trigger.entity;
+    commands.spawn((
             Collider::rectangle(30., 10.),
             Transform::from_xyz(10., 0., 0.),
             Sensor,
-            HitBox,
-            collider_layer,
-        ))
-        .set_parent(entity)
-        .id();
-    animator.push_active_child(id);
+            HitBox { damage: 1000. },
+            CollisionLayers::new(GameLayer::PlayerHitBox, [GameLayer::Enemy]),
+            CollisionEventsEnabled,
+            ChildOf(entity),
+            HitboxOf(entity),
+        )).observe(check_hitbox);
 }
 
-fn set_can_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
-    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-    animator.set_bool("can_move", true);
-}
-
-fn set_cant_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
-    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-    animator.set_bool("can_move", false);
-}
-
-fn set_item(mut commands: &mut Commands, _entity: Entity, animator: &mut Animator
-    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-    commands.trigger(ItemEvent);
-    animator.set_bool("can_move", false);
-}
-
-fn set_not_item(mut commands: &mut Commands, _entity: Entity, animator: &mut Animator
-    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-    animator.set_bool("can_move", true);
-    commands.trigger(ItemExitEvent);
-}
-
-fn set_jump(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
-    ,asset_server: &Res<AssetServer>, audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-        //println!("jump!");
-        audio.play(asset_server.load(
-            "Audio/SFX/12_Player_Movement_SFX/30_Jump_03.wav"));
-}
-
-fn set_landing(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
-    ,asset_server: &Res<AssetServer>, audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-        audio.play(asset_server.load(
-            "Audio/SFX/12_Player_Movement_SFX/45_Landing_01.wav"));
-}
-
-
-fn set_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
-    ,asset_server: &Res<AssetServer>, audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-    if let Some(haudio) = &animator.audio {
-        if let Some(instance) = audio_instances.get_mut(haudio) {
-            instance.stop(AudioTween::default());
-        } else {
-            audio.stop();
-        }
-    }    
-    let handle = 
-        audio.play(asset_server.load(
-            "Audio/SFX/12_Player_Movement_SFX/03_Step_grass_03.wav"))
-                .with_playback_rate(2.0).looped().handle();
-    animator.audio = Some(handle);
-}
-
-fn set_not_move(mut commands: &mut Commands, _entity: Entity, animator: &mut Animator
-    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-    if let Some(audio) = &animator.audio {
-        if let Some(instance) = audio_instances.get_mut(audio) {
-            instance.stop(AudioTween::default());
-        } else {
-            _audio.stop();
-        }
+#[exit("attack")]
+fn on_attack_exit(
+    mut commands: Commands,
+    player: Query<&HasHitbox, With<Player>>,
+) {
+    let entity = trigger.entity;
+    let hitboxes = player.get(entity).unwrap();
+    let vec = (**hitboxes).clone();
+    for hitbox in vec {
+        commands.entity(hitbox).despawn();
     }
-    animator.audio = None;
 }
 
+#[enter("stun")]
+fn on_stun_enter(
+    mut player: Query<&mut Animator, With<Player>>,
+) {
+    let entity = trigger.entity;
+    let mut animator = player.get_mut(entity).unwrap();
+    animator.set_bool("can_move", false);
+}
+
+#[exit("stun")]
+fn on_stun_exit(
+    mut player: Query<&mut Animator, With<Player>>,
+) {
+    let entity = trigger.entity;
+    let mut animator = player.get_mut(entity).unwrap();
+    animator.set_bool("can_move", true);
+}
+
+#[enter("item")]
+fn on_item_enter(
+    mut commands: Commands,
+    player: Query<&ItemList, With<Player>>,
+    asset_server: Res<AssetServer>,
+) {
+    let entity = trigger.entity;
+    let item_list = player.get(entity).unwrap();
+    let path = item_list.get_current_item().texture_path;
+    commands.spawn((
+        Sprite {
+            image: asset_server.load(path),
+            ..default()
+        },
+        Transform::from_xyz(10.,10.,0.).with_scale(Vec3::new(0.8, 0.8, 0.8)),
+        ChildOf(entity),
+        ItemOf(entity),
+    ));
+} 
+
+#[exit("item")]
+fn on_item_exit(
+    mut commands: Commands,
+    player: Query<&HasItem, With<Player>>,
+) {
+    let entity = trigger.entity;
+    let items = player.get(entity).unwrap();
+    let vec = (**items).clone();
+    for item in vec {
+        commands.entity(item).despawn();
+    }
+} 
+
+#[enter("jump")]
+fn on_jump_enter(asset_server: Res<AssetServer>, audio: Res<Audio>) {
+    audio.play(asset_server.load(
+        "Audio/SFX/12_Player_Movement_SFX/30_Jump_03.wav"));
+}
+
+#[exit("fall")]
+fn on_fall_exit(asset_server: Res<AssetServer>, audio: Res<Audio>) {
+    audio.play(asset_server.load(
+        "Audio/SFX/12_Player_Movement_SFX/45_Landing_01.wav"));
+}
+
+#[enter("slide")]
+fn on_slide_enter() {
+
+}
+
+#[exit("slide")]
+fn on_slide_exit() {
+
+}
 
 fn check_contact(
     mut player: Single<(&mut Animator, &Transform, &Collider), With<Player>>,
@@ -1384,43 +1388,6 @@ fn check_contact(
     );
     animator.set_bool("is_on_wall", hits_wall.length() > 0 && !is_grounded);
 }
-#[derive(Component)]
-pub struct ItemImg;
-
-#[derive(Event)]
-pub struct ItemEvent;
-
-fn on_item(
-    _trigger: Trigger<ItemEvent>,
-    mut commands: Commands,
-    player: Single<Entity, With<Player>>,
-    asset_server: Res<AssetServer>,
-) {
-    let item_p: Handle<Image> = asset_server.load("Art/Kyrise's 16x16 RPG Icon Pack - V1.3/icons/16x16/potion_02a.png");
-    let item = commands.spawn((
-        Sprite {
-            image: item_p,
-            ..default()
-        },
-        Transform::from_xyz(10.,10.,0.).with_scale(Vec3::new(0.8, 0.8, 0.8)),
-        ItemImg
-    )).id(); 
-    commands.entity(player.into_inner()).add_child(item);
-} 
-#[derive(Event)]
-pub struct ItemExitEvent;
-fn on_item_exit(
-    _trigger: Trigger<ItemExitEvent>,
-    mut commands: Commands,
-    player: Query<Entity, With<ItemImg>>,
-) {
-    println!("1");
-    for entity in &player {
-        commands.entity(entity).despawn_recursive();
-        println!("2");
-    }
-} 
-
 
 pub struct PlayerPlugin<S: States> {
     pub state: S,
@@ -1431,7 +1398,15 @@ impl<S: States> Plugin for PlayerPlugin<S> {
         app.add_plugins(input::PlayerInputPlugin { state: self.state.clone() });
         app.add_systems(OnEnter(self.state.clone()), setup_player.run_if(in_state(self.state.clone())));
         app.add_systems(FixedUpdate, check_contact.run_if(in_state(self.state.clone())));
-        app.add_observer(on_item);
+        app.add_observer(on_attack_enter);
+        app.add_observer(on_attack_exit);
+        app.add_observer(on_stun_enter);
+        app.add_observer(on_stun_exit);
+        app.add_observer(on_item_enter);
         app.add_observer(on_item_exit);
+        app.add_observer(on_jump_enter);
+        app.add_observer(on_fall_exit);
+        app.add_observer(on_slide_enter);
+        app.add_observer(on_slide_exit);
     }
 }

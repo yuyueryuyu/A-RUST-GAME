@@ -217,8 +217,8 @@ fn update_parallax_effect(
     )>,
 ) {
     // 先获取所有需要的数据并存储在本地变量中
-    let player_pos = param_set.p0().single().translation;
-    let camera_pos = param_set.p1().single().translation;
+    let player_pos = param_set.p0().single().unwrap().translation;
+    let camera_pos = param_set.p1().single().unwrap().translation;
 
     // 然后处理背景
     for (mut bg_transform, background) in param_set.p2().iter_mut() {

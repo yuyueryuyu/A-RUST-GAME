@@ -2,14 +2,16 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 use bevy_kira_audio::{Audio, AudioInstance};
 use big_brain::prelude::*;
+use my_bevy_game::{enter, exit};
 use std::collections::HashSet;
 
 use crate::animator::Condition;
 use crate::animator::*;
 use crate::controller::ControllerBundle;
-use crate::damagable::{Damagable, HitBox};
+use crate::damagable::{check_hitbox, Damagable, HasHitbox, HitBox, HitboxOf};
 use crate::game_layer::GameLayer;
 use crate::hint::ItemHint;
+use crate::input::on_pick;
 use crate::physics::PhysicsBundle;
 use crate::player::Player;
 mod behaviour;
@@ -243,7 +245,7 @@ fn setup_animator() -> Animator {
             },
         ],
         loop_animation: false,
-        on_enter: Some(set_cant_move),
+        on_enter: Some(__stun_enter_handler),
         on_exit: None,
         ..default()
     };
@@ -271,8 +273,8 @@ fn setup_animator() -> Animator {
             },
         ],
         loop_animation: false,
-        on_enter: Some(set_attack),
-        on_exit: Some(set_not_attack),
+        on_enter: Some(__attack_enter_handler),
+        on_exit: Some(__attack_exit_handler),
         ..default()
     };
 
@@ -289,8 +291,8 @@ fn setup_animator() -> Animator {
             },
         ],
         loop_animation: false,
-        on_enter: Some(set_boom),
-        on_exit: Some(set_not_boom),
+        on_enter: Some(__boom_enter_handler),
+        on_exit: Some(__boom_exit_handler),
         ..default()
     };
 
@@ -317,7 +319,7 @@ fn setup_animator() -> Animator {
             },
         ],
         loop_animation: false,
-        on_exit: Some(set_can_move),
+        on_exit: Some(__stun_exit_handler),
         ..default()
     };
 
@@ -332,8 +334,8 @@ fn setup_animator() -> Animator {
             exit_time: 1.0,
         }],
         loop_animation: false,
-        on_enter: Some(set_cant_move),
-        on_exit: Some(set_death),
+        on_enter: Some(__stun_enter_handler),
+        on_exit: Some(__death_exit_handler),
         ..default()
     };
 
@@ -348,8 +350,8 @@ fn setup_animator() -> Animator {
             exit_time: 1.0,
         }],
         loop_animation: false,
-        on_enter: None,
-        on_exit: None,
+        on_enter: Some(__stun_enter_handler),
+        on_exit: Some(__stun_exit_handler),
         ..default()
     };
 
@@ -386,114 +388,110 @@ fn setup_animator() -> Animator {
     animator
 }
 
-#[derive(Event)]
-pub struct FireDemonDeath;
+#[derive(Component, Reflect)]
+pub struct FireGlove;
 
+#[exit("death")]
 fn on_fire_demon_death(
-    _trigger: Trigger<FireDemonDeath>,
     mut commands: Commands,
     demon: Single<(Entity, &Transform), With<FireDemon>>,
     asset_server: Res<AssetServer>,
 ) {
     let (entity, transform) = demon.into_inner();
-    commands.entity(entity).despawn_recursive();
+    commands.entity(entity).despawn();
     commands.spawn((
         Sprite {
             image: asset_server.load("Art/Kyrise's 16x16 RPG Icon Pack - V1.3/icons/16x16/gloves_01e.png"),
             ..default()
         },
         Collider::rectangle(20.0, 20.0),
-        Transform::from_xyz(transform.translation.x, 27.1, 0.0),
+        Transform::from_xyz(transform.translation.x, 22.1, 0.0),
         FireGlove,
         ItemHint,
         Sensor,
+        CollisionEventsEnabled,
         CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player])
-    )
-    );
+    )).observe(on_pick);
 } 
 
-#[derive(Component, Reflect)]
-pub struct FireGlove;
-
-fn set_death(commands: &mut Commands, entity: Entity, animator: &mut Animator
-    ,asset_server: &Res<AssetServer>, _audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-    commands.trigger(FireDemonDeath);
-}
-
-fn set_not_attack(commands: &mut Commands, _entity: Entity, animator: &mut Animator
-    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-    for child in animator.active_children.iter() {
-        commands.entity(*child).despawn_recursive();
-    }
-
-    animator.active_children = HashSet::new();
-}
-
-fn set_attack(commands: &mut Commands, entity: Entity, animator: &mut Animator
-    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-    let collider_layer = CollisionLayers::new(GameLayer::EnemyHitBox, [GameLayer::Player]);
-    let id = commands
-        .spawn((
+#[enter("attack")]
+fn on_attack_enter(
+    mut commands: Commands
+) {
+    let entity = trigger.entity;
+    commands.spawn((
             Collider::rectangle(50., 20.),
             Transform::from_xyz(-80., -70., 0.),
             Sensor,
-            HitBox,
-            collider_layer,
-        ))
-        .set_parent(entity)
-        .id();
-    animator.push_active_child(id);
+            HitBox { damage: 40. },
+            CollisionLayers::new(GameLayer::EnemyHitBox, [GameLayer::Player]),
+            CollisionEventsEnabled,
+            ChildOf(entity),
+            HitboxOf(entity),
+        )).observe(check_hitbox);
 }
 
-fn set_not_boom(commands: &mut Commands, _entity: Entity, animator: &mut Animator
-    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-    animator.set_bool("can_move", true);
-    for child in animator.active_children.iter() {
-        commands.entity(*child).despawn_recursive();
+#[exit("attack")]
+fn on_attack_exit(
+    mut commands: Commands,
+    enemy: Query<&HasHitbox, With<FireDemon>>,
+) {
+    let entity = trigger.entity;
+    let hitboxes = enemy.get(entity).unwrap();
+    let vec = (**hitboxes).clone();
+    for hitbox in vec {
+        commands.entity(hitbox).despawn();
     }
-
-    animator.active_children = HashSet::new();
 }
 
-fn set_boom(commands: &mut Commands, entity: Entity, animator: &mut Animator
-    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-    animator.set_bool("can_move", false);
-    let collider_layer = CollisionLayers::new(GameLayer::EnemyHitBox, [GameLayer::Player]);
-    let id = commands
-        .spawn((
+#[enter("boom")]
+fn on_boom_enter(
+    mut commands: Commands
+) {
+    let entity = trigger.entity;
+    commands.spawn((
             Collider::rectangle(80., 100.),
             Transform::from_xyz(0., -20., 0.),
             Sensor,
-            HitBox,
-            collider_layer,
-        ))
-        .set_parent(entity)
-        .id();
-    animator.push_active_child(id);
+            HitBox { damage: 10. },
+            CollisionLayers::new(GameLayer::EnemyHitBox, [GameLayer::Player]),
+            CollisionEventsEnabled,
+            ChildOf(entity),
+            HitboxOf(entity),
+        )).observe(check_hitbox);
 }
 
-fn _set_can_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
-    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
-    animator.set_bool("can_move", true);
+#[exit("boom")]
+fn on_boom_exit(
+    mut commands: Commands,
+    enemy: Query<&HasHitbox, With<FireDemon>>,
+) {
+    let entity = trigger.entity;
+    let hitboxes = enemy.get(entity).unwrap();
+    let vec = (**hitboxes).clone();
+    for hitbox in vec {
+        commands.entity(hitbox).despawn();
+    }
 }
 
-fn set_cant_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
-    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
+#[enter("stun")]
+fn on_stun_enter(
+    mut player: Query<&mut Animator, With<FireDemon>>,
+) {
+    let entity = trigger.entity;
+    let mut animator = player.get_mut(entity).unwrap();
     animator.set_bool("can_move", false);
 }
 
-fn set_can_move(mut _commands: &mut Commands, _entity: Entity, animator: &mut Animator
-    ,_asset_server: &Res<AssetServer>, _audio: &Res<Audio>
-    , audio_instances: &mut ResMut<Assets<AudioInstance>>) {
+#[exit("stun")]
+fn on_stun_exit(
+    mut player: Query<&mut Animator, With<FireDemon>>,
+) {
+    let entity = trigger.entity;
+    let mut animator = player.get_mut(entity).unwrap();
     animator.set_bool("can_move", true);
 }
+
 
 
 fn check_contact(
@@ -607,5 +605,11 @@ impl<S: States> Plugin for FireDemonPlugin<S> {
             ),
         );
         app.add_observer(on_fire_demon_death);
+        app.add_observer(on_attack_enter);
+        app.add_observer(on_attack_exit);
+        app.add_observer(on_boom_enter);
+        app.add_observer(on_boom_exit);
+        app.add_observer(on_stun_enter);
+        app.add_observer(on_stun_exit);
     }
 }

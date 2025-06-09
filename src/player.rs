@@ -1,6 +1,7 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use bevy::render::render_resource::encase::private::Length;
+use bevy_inspector_egui::egui_utils::easymark::parser::Item;
 use bevy_kira_audio::Audio;
 use bevy_kira_audio::AudioControl;
 use bevy_kira_audio::AudioInstance;
@@ -18,14 +19,20 @@ use crate::animator::*;
 use crate::damagable::*;
 use crate::game_layer::GameLayer;
 use crate::healthbar::ItemImg;
+use crate::hint::ItemHint;
 use crate::input;
 use crate::input::*;
 use crate::controller::*;
+use crate::items::item_canpick_observer;
+use crate::items::item_cantpick_observer;
+use crate::items::ActiveItems;
 use crate::items::HasItem;
-use crate::items::Item;
+use crate::items::ItemBag;
 use crate::items::ItemList;
 use crate::items::ItemOf;
 use crate::items::ItemType;
+use crate::items::NotpickedItems;
+use crate::items::UseItemTrigger;
 use crate::physics::*;
 use crate::save::TransformData;
 
@@ -38,6 +45,7 @@ fn setup_player(
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut transform_data: ResMut<TransformData>,
+    items: Res<ItemList>,
 ) {
     let texture = asset_server.load("Art/Adventurer/adventurer-sheet.png");
     let layout = TextureAtlasLayout::from_grid(UVec2::new(50, 37), 20, 10, None, None);
@@ -52,13 +60,6 @@ fn setup_player(
             GameLayer::Sensor,
         ],
     );
-    let item_list = ItemList {
-        items: vec![Item::new(
-            ItemType::HealthPotion, 
-            String::from("Art/Kyrise's 16x16 RPG Icon Pack - V1.3/icons/16x16/potion_02a.png"), 5
-        )],
-        item_now: 0,
-    };
     let translation = Vec3::new(transform_data.translation[0], transform_data.translation[1], transform_data.translation[2]);
     let scale = Vec3::new(transform_data.scale[0], transform_data.scale[1], transform_data.scale[2]);
     commands.spawn((
@@ -82,10 +83,24 @@ fn setup_player(
             friction: Friction::new(-0.1),
             ..default()
         },
-        item_list,
+        ItemBag { slots: HashMap::new() },
+        ActiveItems { items: vec![], current: 0 },
         transform_data.damagable.clone(),
     ));
 
+    commands.spawn((
+        Sprite {
+            image: items.infos.get(&String::from("HealthPotion")).unwrap().icon.clone(),
+            ..default()
+        },
+        Collider::rectangle(20.0, 20.0),
+        Transform::from_xyz(translation.x, translation.y, 0.0),
+        ItemHint,
+        NotpickedItems { id: "HealthPotion".to_string(), num: 5 },
+        Sensor,
+        CollisionEventsEnabled,
+        CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player])
+    )).observe(item_cantpick_observer).observe(item_canpick_observer);
 }
 
 #[derive(Reflect)]
@@ -1306,15 +1321,18 @@ fn on_stun_exit(
 #[enter("item")]
 fn on_item_enter(
     mut commands: Commands,
-    player: Query<&ItemList, With<Player>>,
-    asset_server: Res<AssetServer>,
+    player: Query<&ActiveItems, With<Player>>,
+    item_list: Res<ItemList>,
 ) {
     let entity = trigger.entity;
-    let item_list = player.get(entity).unwrap();
-    let path = item_list.get_current_item().texture_path;
+    let items = player.get(entity).unwrap();
+    if items.items.is_empty() { return; }
+    let item_name = items.get_current_item();
+    let item_info = item_list.infos.get(&item_name).unwrap();
+    commands.trigger(UseItemTrigger { user: entity, item: items.get_current_item().clone() });
     commands.spawn((
         Sprite {
-            image: asset_server.load(path),
+            image: item_info.icon.clone(),
             ..default()
         },
         Transform::from_xyz(10.,10.,0.).with_scale(Vec3::new(0.8, 0.8, 0.8)),

@@ -54,13 +54,13 @@ fn setup_enemy(
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(400.0, 257.),
+        Vec2::new(400.0, 230.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(500.0, 257.),
+        Vec2::new(500.0, 230.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );

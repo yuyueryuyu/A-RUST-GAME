@@ -68,7 +68,7 @@ fn spawn_box(
         ..default()
     };
 
-    let save_node = Node {
+    let bag_node = Node {
         position_type: PositionType::Absolute,
         width: Val::Percent(100.),
         height: Val::Percent(10.),
@@ -78,7 +78,7 @@ fn spawn_box(
         ..default()
     };
 
-    let load_node = Node {
+    let save_node = Node {
         position_type: PositionType::Absolute,
         width: Val::Percent(100.),
         height: Val::Percent(10.),
@@ -88,7 +88,7 @@ fn spawn_box(
         ..default()
     };
 
-    let exit_node = Node {
+    let load_node = Node {
         position_type: PositionType::Absolute,
         width: Val::Percent(100.),
         height: Val::Percent(10.),
@@ -97,7 +97,18 @@ fn spawn_box(
         //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
         ..default()
     };
+
+    let exit_node = Node {
+        position_type: PositionType::Absolute,
+        width: Val::Percent(100.),
+        height: Val::Percent(10.),
+        top: Val::Percent(75.),
+        justify_content: JustifyContent::Center,
+        //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
+        ..default()
+    };
     let start_text = Text::new("[ Continue ]");
+    let bag_text = Text::new("Open Bag");
     let save_text = Text::new("Save Game");
     let load_text = Text::new("Load Game");
     let exit_text = Text::new("Game Exit");
@@ -131,11 +142,19 @@ fn spawn_box(
         ));
     }).id();
 
+    let bag_node_entity = commands.spawn((
+        bag_node,
+    )).with_children(|parent| {
+        parent.spawn((
+            bag_text, font.clone(), Label, MenuItem { id: 1, is_selected : true }
+        ));
+    }).id();
+
     let save_node_entity = commands.spawn((
         save_node,
     )).with_children(|parent| {
         parent.spawn((
-            save_text, font.clone(), Label, MenuItem { id: 1, is_selected : false }
+            save_text, font.clone(), Label, MenuItem { id: 2, is_selected : false }
         ));
     }).id();
 
@@ -143,7 +162,7 @@ fn spawn_box(
         load_node,
     )).with_children(|parent| {
         parent.spawn((
-            load_text, font.clone(), Label, MenuItem { id: 2, is_selected : false }
+            load_text, font.clone(), Label, MenuItem { id: 3, is_selected : false }
         ));
     }).id();
 
@@ -151,7 +170,7 @@ fn spawn_box(
         exit_node,
     )).with_children(|parent| {
         parent.spawn((
-            exit_text, font.clone(), Label, MenuItem { id: 3, is_selected : false }
+            exit_text, font.clone(), Label, MenuItem { id: 4, is_selected : false }
         ));
     }).id();
 
@@ -160,7 +179,7 @@ fn spawn_box(
         .add_children(&[title_entity, choice_entity]);
     commands
         .entity(choice_entity)
-        .add_children(&[start_node_entity, save_node_entity, load_node_entity, exit_node_entity]);
+        .add_children(&[start_node_entity, bag_node_entity, save_node_entity, load_node_entity, exit_node_entity]);
     //commands.entity(text_node_entity).add_children(&[text_entity]);
 }
 
@@ -230,25 +249,29 @@ fn handle_enter(
     mut next_state: ResMut<NextState<PausedState>>,
     mut exit_events: EventWriter<AppExit>,
     save_events: EventWriter<SaveRequest>,
-    load_events: EventWriter<LoadRequest>,
     mut player: Single<(&mut Transform, &mut Animator, &mut Damagable), With<Player>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Enter) {
         for item in &items {
             if item.is_selected {
                 if item.id == 0 {
-                    if let Ok(entity) = ui.get_single() {
-                        commands.entity(entity).despawn_recursive();
+                    if let Ok(entity) = ui.single() {
+                        commands.entity(entity).despawn();
                     }
                     next_state.set(PausedState::Running);
                 } else if item.id == 1 {
+                    if let Ok(entity) = ui.single() {
+                        commands.entity(entity).despawn();
+                    }
+                    next_state.set(PausedState::BagUI);
+                }  if item.id == 2 {
                     trigger_save(save_events);
                     //trigger_load(load_events)
-                    if let Ok(entity) = ui.get_single() {
-                        commands.entity(entity).despawn_recursive();
+                    if let Ok(entity) = ui.single() {
+                        commands.entity(entity).despawn();
                     }
                     next_state.set(PausedState::Running);
-                }  else if item.id == 2 {
+                }  else if item.id == 3 {
                     let transform = load().unwrap();
                     let (
                         mut trans, 
@@ -263,19 +286,19 @@ fn handle_enter(
                     trans.scale.z = transform.scale[2];
                     animator.parameters = transform.params;
                     dam.copy(transform.damagable);
-                    if let Ok(entity) = ui.get_single() {
-                        commands.entity(entity).despawn_recursive();
+                    if let Ok(entity) = ui.single() {
+                        commands.entity(entity).despawn();
                     }
                     next_state.set(PausedState::Running);
-                } else if item.id == 3 {
-                    exit_events.send(AppExit::Success);
+                } else if item.id == 4 {
+                    exit_events.write(AppExit::Success);
                 }
                 break;
             }
         }
     } else if keyboard_input.just_pressed(KeyCode::Escape) {
-        if let Ok(entity) = ui.get_single() {
-            commands.entity(entity).despawn_recursive();
+        if let Ok(entity) = ui.single() {
+            commands.entity(entity).despawn();
         }
         next_state.set(PausedState::Running);
     }

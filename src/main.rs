@@ -25,6 +25,7 @@ mod save;
 mod pause;
 mod hint;
 mod getitem;
+mod bag_ui;
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
 enum AppState {
@@ -38,6 +39,7 @@ enum PausedState {
     Running,
     Paused,
     GetItem,
+    BagUI,
 }
 
 fn main() {
@@ -82,6 +84,7 @@ fn main() {
         })
         .add_plugins(pause::PausePlugin)
         .add_plugins(getitem::GetItemPlugin)
+        .add_plugins(bag_ui::BagUIPlugin)
         .add_plugins(items::ItemsPlugin {
             state: AppState::InGame,
         })

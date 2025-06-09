@@ -11,7 +11,7 @@ use crate::controller::ControllerBundle;
 use crate::damagable::{check_hitbox, Damagable, HasHitbox, HitBox, HitboxOf};
 use crate::game_layer::GameLayer;
 use crate::hint::ItemHint;
-use crate::input::on_pick;
+use crate::items::{item_canpick_observer, item_cantpick_observer, ItemList, NotpickedItems};
 use crate::physics::PhysicsBundle;
 use crate::player::Player;
 mod behaviour;
@@ -388,30 +388,27 @@ fn setup_animator() -> Animator {
     animator
 }
 
-#[derive(Component, Reflect)]
-pub struct FireGlove;
-
 #[exit("death")]
 fn on_fire_demon_death(
     mut commands: Commands,
     demon: Single<(Entity, &Transform), With<FireDemon>>,
-    asset_server: Res<AssetServer>,
+    items: Res<ItemList>, 
 ) {
     let (entity, transform) = demon.into_inner();
     commands.entity(entity).despawn();
     commands.spawn((
         Sprite {
-            image: asset_server.load("Art/Kyrise's 16x16 RPG Icon Pack - V1.3/icons/16x16/gloves_01e.png"),
+            image: items.infos.get(&String::from("FireGlove")).unwrap().icon.clone(),
             ..default()
         },
         Collider::rectangle(20.0, 20.0),
         Transform::from_xyz(transform.translation.x, 22.1, 0.0),
-        FireGlove,
         ItemHint,
+        NotpickedItems { id: "FireGlove".to_string(), num: 1 },
         Sensor,
         CollisionEventsEnabled,
         CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player])
-    )).observe(on_pick);
+    )).observe(item_cantpick_observer).observe(item_canpick_observer);
 } 
 
 #[enter("attack")]

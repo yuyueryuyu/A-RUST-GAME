@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::damagable::Damagable;
-use crate::items::ItemList;
+use crate::items::{ActiveItems, ItemBag, ItemList};
 use crate::player::Player;
 
 const MAX_HEALTH_LEN: f32 = 300.;
@@ -19,31 +19,44 @@ pub struct HealthBar {
 
 #[derive(Component)]
 pub struct ItemImg {
-    pub index: usize,   
+    pub index: Option<usize>,   
 }
 
 #[derive(Component)]
 pub struct ItemNum {
-    pub nums: i32,
+    pub nums: u32,
 }
 
 
 fn update_item(
-    asset_server: Res<AssetServer>,
-    item_list: Single<&ItemList, With<Player>>,
+    item_list: Single<(&ActiveItems, &ItemBag), With<Player>>,
     item_img: Single<(&mut ImageNode, &mut ItemImg)>,
     item_num: Single<(&mut Text, &mut ItemNum)>,
+    items: Res<ItemList>,
+    asset_server: Res<AssetServer>,
 ) {
     let (mut item, mut item_img) = item_img.into_inner();
     let (mut text, mut item_num) = item_num.into_inner();
-    let item_now = &item_list.items[item_list.item_now];
-    if item_img.index != item_list.item_now {
-        item_img.index = item_list.item_now;
-        item.image = asset_server.load(&item_now.texture_path);
+    let (active, bag) = item_list.into_inner();
+    if active.items.is_empty() { 
+        item.image = asset_server.load("Art/empty.png");
+        text.0 = "".to_string();
+        return;
     }
-    if item_num.nums != item_now.nums {
-        item_num.nums = item_now.nums;
-        text.0 = item_now.nums.to_string();
+    let item_now = active.get_current_item();
+    let item_stack = bag.slots.get(&item_now).unwrap();
+    if item_img.index == None {
+        item_img.index = Some(active.current);
+        item.image = items.infos.get(&item_now).unwrap().icon.clone();
+        item_num.nums = 0;
+    }
+    if let Some(_) = item_img.index {
+        item_img.index = Some(active.current);
+        item.image = items.infos.get(&item_now).unwrap().icon.clone()
+    }
+    if item_num.nums != *item_stack {
+        item_num.nums = *item_stack;
+        text.0 = (*item_stack).to_string();
     }
 }
 
@@ -107,7 +120,7 @@ fn spawn_box(
         justify_content: JustifyContent::Start,
         ..default()
     };
-    let left = ImageNode::new(asset_server.load("Art/Kyrise's 16x16 RPG Icon Pack - V1.3/icons/16x16/potion_02a.png"));
+    let left = ImageNode::new(asset_server.load("Art/empty.png"));
     let text_node = Node {
         position_type: PositionType::Absolute,
         width: Val::Px(30.),
@@ -153,7 +166,7 @@ fn spawn_box(
         ))
         .id();
     let item_entity = commands.spawn((
-        left, ItemImg { index: 0 }
+        left, ItemImg { index: None }
     )).id();
     let text_node_entity = commands.spawn((
         text_node,

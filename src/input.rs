@@ -11,9 +11,13 @@ use bevy_kira_audio::prelude::*;
 use crate::animator::Animator;
 use crate::damagable::Damagable;
 use crate::healthbar::Hint;
+use crate::items::ActiveItems;
 use crate::items::ItemList;
+use crate::items::NearingItem;
+use crate::items::NotpickedItems;
+use crate::items::PickItemTrigger;
+use crate::items::UseItemTrigger;
 use crate::player::Player;
-use crate::enemy::fire_demon::FireGlove;
 use crate::PausedState;
 
 const WALK_SPEED: f32 = 80.0;
@@ -236,30 +240,29 @@ fn on_slide(
 }
 
 fn on_use(
-    player: Single<(Entity, &ActionState<Action>, &mut Animator, &mut ItemList), With<Player>>,
+    player: Single<(&ActionState<Action>, &mut Animator), With<Player>>,
 ) {
-    let (entity, action_state, mut animator, mut item_list) = player.into_inner();
+    let (action_state, mut animator) = player.into_inner();
     if action_state.just_pressed(&Action::UseItem) {
-        item_list.use_item(entity);
         animator.set_trigger("items");
     }
 }
 
-pub fn on_pick(
-    mut trigger: Trigger<OnCollisionStart>,
+fn on_pick(
     mut commands: Commands,
-    mut player_single: Single<(&ActionState<Action>, &mut Animator), With<Player>>,
-    mut text: Single<&mut Text, With<Hint>>,
-    mut next_state: ResMut<NextState<PausedState>>,
+    player: Single<(Entity, &NearingItem, &ActionState<Action>), With<Player>>,
+    items: Query<&NotpickedItems>
 ) {
-    let item = trigger.target();
-    let player = trigger.collider;
-    let (action_state, mut animator) = player_single.into_inner();
+    let (entity, nearing_items, action_state) = player.into_inner();
     if action_state.just_pressed(&Action::PickItem) {
-        animator.set_bool("can_wall_jump", true);
-        commands.entity(item).despawn();
-        text.0 = "".to_string();
-        next_state.set(PausedState::GetItem);
+        for item in (**nearing_items).clone() {
+            let item_info = items.get(item).unwrap();
+            commands.trigger(PickItemTrigger { 
+                picker: entity, 
+                item: item_info.id.clone(), 
+                num: item_info.num 
+            });
+        }
     }
 }
 
@@ -281,6 +284,7 @@ impl<S: States> Plugin for PlayerInputPlugin<S> {
                 on_slide.run_if(in_state(self.state.clone())),
                 on_defense.run_if(in_state(self.state.clone())),
                 on_use.run_if(in_state(self.state.clone())),
+                on_pick.run_if(in_state(self.state.clone())),
             )
         );
     }

@@ -14,51 +14,8 @@ fn spawn_box(
     mut commands: Commands, 
     asset_server: Res<AssetServer>,
 ) {
-    let ui_container = Node {
-        width: Val::Percent(100.0),
-        height: Val::Percent(100.0),
-        justify_content: JustifyContent::Center,
-        ..default()
-    };
-
-    let title_node = Node {
-        position_type: PositionType::Absolute,
-        width: Val::Percent(100.),
-        height: Val::Percent(50.),
-        top: Val::Percent(10.),
-        justify_content: JustifyContent::Center,
-        //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
-        ..default()
-    };
-    let title = ImageNode::new(asset_server.load("UI/title.png"));
     let color = Color::srgb(0., 0., 0.);
-    let start_node = Node {
-        position_type: PositionType::Absolute,
-        width: Val::Percent(100.),
-        height: Val::Percent(10.),
-        top: Val::Percent(63.),
-        justify_content: JustifyContent::Center,
-        //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
-        ..default()
-    };
-    let load_node = Node {
-        position_type: PositionType::Absolute,
-        width: Val::Percent(100.),
-        height: Val::Percent(10.),
-        top: Val::Percent(73.),
-        justify_content: JustifyContent::Center,
-        //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
-        ..default()
-    };
-    let exit_node = Node {
-        position_type: PositionType::Absolute,
-        width: Val::Percent(100.),
-        height: Val::Percent(10.),
-        top: Val::Percent(83.),
-        justify_content: JustifyContent::Center,
-        //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
-        ..default()
-    };
+
     let start_text = Text::new("[ Game Start ]");
     let load_text = Text::new("Game Load");
     let exit_text = Text::new("Game Exit");
@@ -68,44 +25,79 @@ fn spawn_box(
         ..default()
     };
     
-    let ui_entity = commands.spawn((ui_container, BackgroundColor(color), UI)).id();
+    let ui_entity = commands.spawn((
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            justify_content: JustifyContent::Center,
+            ..default()
+        }, BackgroundColor(color), UI
+    )).id();
     
     let title_entity = commands.spawn((
-        title_node,
-    )).with_children(|parent| {
-        parent.spawn(
-            title
-        );
-    }).id();
+        Node {
+            position_type: PositionType::Absolute,
+            width: Val::Percent(100.),
+            height: Val::Percent(50.),
+            top: Val::Percent(10.),
+            justify_content: JustifyContent::Center,
+            //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
+            ..default()
+        },
+        children![ImageNode::new(asset_server.load("UI/title.png"))]
+    )).id();
 
     let start_node_entity = commands.spawn((
-        start_node,
-    )).with_children(|parent| {
-        parent.spawn((
-            start_text, font.clone(), Label, MenuItem { id: 0, is_selected : true }
-        ));
-    }).id();
+        Node {
+            position_type: PositionType::Absolute,
+            width: Val::Percent(100.),
+            height: Val::Percent(10.),
+            top: Val::Percent(63.),
+            justify_content: JustifyContent::Center,
+            //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
+            ..default()
+        },
+        children![(
+            start_text, 
+            font.clone(), 
+            Label, 
+            MenuItem { id: 0, is_selected : true }
+        )]
+    )).id();
 
     let load_node_entity = commands.spawn((
-        load_node,
-    )).with_children(|parent| {
-        parent.spawn((
+        Node {
+            position_type: PositionType::Absolute,
+            width: Val::Percent(100.),
+            height: Val::Percent(10.),
+            top: Val::Percent(73.),
+            justify_content: JustifyContent::Center,
+            //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
+            ..default()
+        },
+        children![(
             load_text, font.clone(), Label, MenuItem { id: 1, is_selected : false }
-        ));
-    }).id();
+        )]
+    )).id();
 
     let exit_node_entity = commands.spawn((
-        exit_node,
-    )).with_children(|parent| {
-        parent.spawn((
-            exit_text, font.clone(), Label, MenuItem { id: 2, is_selected : false }
-        ));
-    }).id();
+        Node {
+            position_type: PositionType::Absolute,
+            width: Val::Percent(100.),
+            height: Val::Percent(10.),
+            top: Val::Percent(83.),
+            justify_content: JustifyContent::Center,
+            //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
+            ..default()
+        },
+        children![
+            (exit_text, font.clone(), Label, MenuItem { id: 2, is_selected : false })
+        ]
+    )).id();
 
     commands
         .entity(ui_entity)
         .add_children(&[title_entity, start_node_entity, load_node_entity, exit_node_entity]);
-    //commands.entity(text_node_entity).add_children(&[text_entity]);
 }
 
 fn handle_choice(

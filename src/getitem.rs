@@ -3,6 +3,7 @@ use moonshine_save::load;
 
 use crate::animator::Animator;
 use crate::damagable::Damagable;
+use crate::items::{ItemList, NearingItem, NotpickedItems};
 use crate::player::Player;
 use crate::{AppState, PausedState};
 use crate::save::load;
@@ -18,8 +19,17 @@ pub struct UI;
 
 fn spawn_box(
     mut commands: Commands, 
+    player: Single<&NearingItem, With<Player>>,
+    items: Query<&NotpickedItems>,
+    item_list: Res<ItemList>,
     asset_server: Res<AssetServer>,
 ) {
+    let nearing_items = player.into_inner();
+    let item = (**nearing_items).get(0).unwrap();
+    let item_info = items.get(*item).unwrap();
+    let id = &item_info.id;
+    let info = item_list.infos.get(id).unwrap();
+    
     let ui_container = Node {
         width: Val::Percent(100.0),
         height: Val::Percent(100.0),
@@ -36,18 +46,27 @@ fn spawn_box(
         //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
         ..default()
     };
-    let title = ImageNode::new(asset_server.load("Art/Kyrise's 16x16 RPG Icon Pack - V1.3/icons/32x32/gloves_01e.png"));
+    let title = ImageNode::new(info.icon.clone());
     let color = Color::srgb(0., 0., 0.).with_alpha(0.7);
-    let desc_node = Node {
+    let name_node = Node {
         position_type: PositionType::Absolute,
         width: Val::Percent(100.),
         height: Val::Percent(20.),
-        top: Val::Percent(68.),
+        top: Val::Percent(63.),
         justify_content: JustifyContent::Center,
         //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
         ..default()
     };
     
+    let desc_node = Node {
+        position_type: PositionType::Absolute,
+        width: Val::Percent(100.),
+        height: Val::Percent(20.),
+        top: Val::Percent(73.),
+        justify_content: JustifyContent::Center,
+        //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
+        ..default()
+    };
     
     let start_node = Node {
         position_type: PositionType::Absolute,
@@ -61,7 +80,8 @@ fn spawn_box(
     
     let start_text = Text::new("[ Continue ]");
 
-    let desc_text = Text::new("Fire Glove: [Jump on Wall]");
+    let name_text = Text::new(info.name.clone());
+    let desc_text = Text::new(info.description.clone());
    
     let font = TextFont {
         font: asset_server.load("UI/Fonts/m5x7.ttf"),
@@ -84,6 +104,14 @@ fn spawn_box(
             title
         );
     }).id();
+
+    let name_node_entity = commands.spawn((
+        name_node,
+    )).with_children(|parent| {
+        parent.spawn((
+            name_text, sfont.clone(), Label
+        ));
+    }).id();
     
     let desc_node_entity = commands.spawn((
         desc_node,
@@ -104,8 +132,9 @@ fn spawn_box(
 
     commands
         .entity(ui_entity)
-        .add_children(&[title_entity, desc_node_entity, start_node_entity]);
-    //commands.entity(text_node_entity).add_children(&[text_entity]);
+        .add_children(&[title_entity, name_node_entity, desc_node_entity, start_node_entity]);
+
+    commands.entity(*item).despawn();
 }
 
 fn handle_enter(
@@ -114,17 +143,13 @@ fn handle_enter(
     mut commands: Commands,
     ui: Query<Entity, With<UI>>,
     mut next_state: ResMut<NextState<PausedState>>,
-    mut exit_events: EventWriter<AppExit>,
-    save_events: EventWriter<SaveRequest>,
-    load_events: EventWriter<LoadRequest>,
-    mut player: Single<(&mut Transform, &mut Animator, &mut Damagable), With<Player>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Enter) {
         for item in &items {
             if item.is_selected {
                 if item.id == 0 {
-                    if let Ok(entity) = ui.get_single() {
-                        commands.entity(entity).despawn_recursive();
+                    if let Ok(entity) = ui.single() {
+                        commands.entity(entity).despawn();
                     }
                     next_state.set(PausedState::Running);
                 } 
@@ -132,8 +157,8 @@ fn handle_enter(
             }
         }
     } else if keyboard_input.just_pressed(KeyCode::Escape) {
-        if let Ok(entity) = ui.get_single() {
-            commands.entity(entity).despawn_recursive();
+        if let Ok(entity) = ui.single() {
+            commands.entity(entity).despawn();
         }
         next_state.set(PausedState::Running);
     }

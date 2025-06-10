@@ -241,7 +241,7 @@ fn spawn_inventory_ui(
             BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
         )).with_children(|parent| {
             parent.spawn((
-                Text::new("Use Arrow Button to Move \n Use Enter for Selecting"),
+                Text::new("Use Arrow Button to Move \nUse Enter for Selecting"),
                 font.clone(),
                 TextColor(Color::srgb(0.8, 0.8, 0.8)),
             ));

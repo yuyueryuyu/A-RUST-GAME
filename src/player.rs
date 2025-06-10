@@ -1347,10 +1347,11 @@ fn on_item_exit(
     player: Query<&HasItem, With<Player>>,
 ) {
     let entity = trigger.entity;
-    let items = player.get(entity).unwrap();
-    let vec = (**items).clone();
-    for item in vec {
-        commands.entity(item).despawn();
+    if let Ok(items) = player.get(entity) {
+        let vec = (**items).clone();
+        for item in vec {
+            commands.entity(item).despawn();
+        }
     }
 } 
 

@@ -168,24 +168,26 @@ fn pick_item_observer(
     let item = &trigger.item;
     let map = &item_list.infos;
     let info = map.get(item).unwrap();
-    let (mut animator, mut bag, nearing) = users.get_mut(user).unwrap();
-    let before_num = bag.get(item);
+    if let Ok((mut animator, mut bag, nearing)) = users.get_mut(user) {
+        let before_num = bag.get(item);
     bag.put(item.clone(), before_num + trigger.num);
-    match info.item_type {
-        ItemType::Ability(it) => {
-            match it {
-                AbilityType::WallJump => {
-                    animator.set_bool("can_wall_jump", true);
+        match info.item_type {
+            ItemType::Ability(it) => {
+                match it {
+                    AbilityType::WallJump => {
+                        animator.set_bool("can_wall_jump", true);
+                    }
+                }
+                text.into_inner().0 = "".to_string();
+                next_state.set(PausedState::GetItem);
+            }
+            _ => {
+                for item in (**nearing).clone() {
+                    commands.entity(item).despawn();
                 }
             }
-            text.into_inner().0 = "".to_string();
-            next_state.set(PausedState::GetItem);
         }
-        _ => {
-            for item in (**nearing).clone() {
-                commands.entity(item).despawn();
-            }
-        }
+
     }
 }
 

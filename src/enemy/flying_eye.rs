@@ -24,53 +24,167 @@ fn setup_enemy(
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
-    /*let texture =
+    let texture =
         asset_server.load("Art/Monster_Creatures_Fantasy(Version 1.3)/flying_eyes_sheet.png");
     let layout = TextureAtlasLayout::from_grid(UVec2::new(150, 150), 8, 5, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
     spawn_enemy(
         &mut commands,
-        Vec2::new(250.0, 45.1),
+        Vec2::new(640.0, 533.1),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(400.0, 45.2),
+        Vec2::new(730.0, 533.1),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(250.0, 157.),
+        Vec2::new(820.0, 533.1),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(400.0, 157.),
+        Vec2::new(2930.0, 37.2),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(400.0, 257.),
+        Vec2::new(2886.0, 134.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(500.0, 257.),
+        Vec2::new(2927.0, 309.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(726.0, 413.),
+        Vec2::new(400.0, 469.),
         texture.clone(),
         texture_atlas_layout.clone(),
-    );*/
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(1600.0, 469.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(1720.0, 469.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(1840.0, 469.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(1960.0, 469.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(2160.0, 469.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(2360.0, 469.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(2560.0, 469.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(1787.0, 645.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(1987.0, 645.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(2187.0, 645.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(2345.0, 645.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(977.0, 597.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(1177.0, 597.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(1377.0, 597.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(1528.0, 597.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(41., 554.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(241., 554.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(441., 554.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
+    spawn_enemy(
+        &mut commands,
+        Vec2::new(541., 554.),
+        texture.clone(),
+        texture_atlas_layout.clone(),
+    );
 }
 
 fn spawn_enemy(
@@ -88,7 +202,7 @@ fn spawn_enemy(
             GameLayer::PlayerHitBox,
         ],
     );
-    /*let move_and_attack = Steps::build()
+    let move_and_attack = Steps::build()
         .label("MoveAndAttack")
         .step(MoveToPlayer)
         .step(Attack);
@@ -99,7 +213,7 @@ fn spawn_enemy(
         .label("Thinker")
         .picker(Highest)
         .when(NoticeScorer, move_and_attack)
-        .when(PatrolScorer, patrol);*/
+        .when(PatrolScorer, patrol);
 
     commands.spawn((
         Sprite {
@@ -126,8 +240,8 @@ fn spawn_enemy(
         },
         Damagable::new(100.),
         animator,
-        //Notice::new(0.0, 50.0, 10.0),
-        //thinker,
+        Notice::new(0.0, 50.0, 10.0),
+        thinker,
     ));
 }
 
@@ -365,6 +479,7 @@ fn setup_animator() -> Animator {
     animator.add_parameter("facing_direction", AnimatorParam::Float(1.0));
     animator.add_parameter("is_noticing", AnimatorParam::Bool(false));
     animator.add_parameter("noticed", AnimatorParam::Bool(false));
+    animator.add_parameter("can_move", AnimatorParam::Bool(true));
 
     animator.add_state(flight_state);
     animator.add_state(attack_state);
@@ -491,7 +606,7 @@ pub struct FlyingEyesPlugin<S: States> {
 
 impl<S: States> Plugin for FlyingEyesPlugin<S> {
     fn build(&self, app: &mut App) {
-        //app.add_plugins(SkeletonBehaviourPlugin { state: self.state.clone() });
+        app.add_plugins(FlyingEyesBehaviourPlugin { state: self.state.clone() });
         app.add_systems(OnEnter(self.state.clone()), setup_enemy.run_if(in_state(self.state.clone())));
         app.add_systems(
             FixedUpdate,

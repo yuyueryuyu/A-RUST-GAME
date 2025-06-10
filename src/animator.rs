@@ -119,6 +119,10 @@ impl Animator {
         self
     }
 
+    pub fn in_state(&self, state: String) -> bool {
+        self.current_state == state
+    }
+
     // 添加状态
     pub fn add_state(&mut self, state: AnimationState) {
         let name = state.name.clone();

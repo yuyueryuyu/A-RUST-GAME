@@ -4,7 +4,7 @@ use avian2d::prelude::{OnCollisionEnd, OnCollisionStart};
 use bevy::{prelude::*, render::render_resource::encase::private::Length};
 use serde::{Deserialize, Serialize};
 
-use crate::{animator::Animator, damagable::{self, Damagable}, healthbar::Hint, player::Player, PausedState};
+use crate::{animator::Animator, blocks::InitialGate, damagable::{self, Damagable}, healthbar::Hint, player::Player, PausedState};
 /// 完整的道具系统逻辑
 /// 资源存储完整的道具信息，玩家的组件只存储道具名。
 
@@ -90,12 +90,14 @@ pub enum ItemType {
 #[derive(Debug, Clone, Copy, Reflect, Serialize, Deserialize)]
 pub enum ConsumableType {
     Healing,
+    OpenTheDoor,
 }
 
 /// 能力型道具的类别，拾取后生效
 #[derive(Debug, Clone, Copy, Reflect, Serialize, Deserialize)]
 pub enum AbilityType {
     WallJump,
+    ReverseGravity,
 }
 
 /// 道具使用触发器
@@ -107,8 +109,10 @@ pub struct UseItemTrigger {
 
 fn use_potion_observer(
     trigger: Trigger<UseItemTrigger>,
+    mut commands: Commands,
     item_list: Res<ItemList>,
-    mut users: Query<(&mut Damagable, &mut ItemBag)>
+    mut users: Query<(&mut Damagable, &mut ItemBag)>,
+    door: Query<Entity, With<InitialGate>>,
 ) {
     let user = trigger.user;
     let item = &trigger.item;
@@ -123,6 +127,9 @@ fn use_potion_observer(
             match it {
                 ConsumableType::Healing => {
                     damagable.healing();
+                }
+                ConsumableType::OpenTheDoor => {
+                    commands.entity(door.single().unwrap()).despawn();
                 }
             }
         }
@@ -169,13 +176,17 @@ fn pick_item_observer(
     let map = &item_list.infos;
     let info = map.get(item).unwrap();
     if let Ok((mut animator, mut bag, nearing)) = users.get_mut(user) {
-        let before_num = bag.get(item);
+    let before_num = bag.get(item);
+    if before_num + trigger.num > info.max_stack { return; }
     bag.put(item.clone(), before_num + trigger.num);
         match info.item_type {
             ItemType::Ability(it) => {
                 match it {
                     AbilityType::WallJump => {
                         animator.set_bool("can_wall_jump", true);
+                    }
+                    AbilityType::ReverseGravity => {
+                        animator.set_bool("can_reverse_gravity", true);
                     }
                 }
                 text.into_inner().0 = "".to_string();
@@ -195,20 +206,36 @@ fn pick_item_observer(
 fn init_items(assets_server: Res<AssetServer>, mut item_list: ResMut<ItemList>) {
     let health_potion = ItemInfo {
         name: "Health Potion".to_string(),
-        description: "".to_string(),
+        description: "The Secret Health Potion. You don't know why, but you feel better when you drink it.".to_string(),
         icon: assets_server.load("Art/Kyrise's 16x16 RPG Icon Pack - V1.3/icons/16x16/potion_02a.png"),
-        max_stack: 5,
+        max_stack: 10,
         item_type: ItemType::Consumable(ConsumableType::Healing),
     };
     item_list.infos.insert("HealthPotion".to_string(), health_potion);
+    let key = ItemInfo {
+        name: "Key".to_string(),
+        description: "The key of your prison room. Use it to open the door!".to_string(),
+        icon: assets_server.load("Art/Kyrise's 16x16 RPG Icon Pack - V1.3/icons/16x16/key_01a.png"),
+        max_stack: 1,
+        item_type: ItemType::Consumable(ConsumableType::OpenTheDoor),
+    };
+    item_list.infos.insert("Key".to_string(), key);
     let fire_glove = ItemInfo {
         name: "Fire Glove".to_string(),
-        description: "".to_string(),
+        description: "Wall Jump: Press [Space] when at wall".to_string(),
         icon: assets_server.load("Art/Kyrise's 16x16 RPG Icon Pack - V1.3/icons/16x16/gloves_01e.png"),
         max_stack: 1,
         item_type: ItemType::Ability(AbilityType::WallJump),
     };
     item_list.infos.insert("FireGlove".to_string(), fire_glove);
+    let martial_scroll = ItemInfo {
+        name: "Martial Scroll".to_string(),
+        description: "Reverse Gravity: Press [G]".to_string(),
+        icon: assets_server.load("Art/Kyrise's 16x16 RPG Icon Pack - V1.3/icons/16x16/scroll_01a.png"),
+        max_stack: 1,
+        item_type: ItemType::Ability(AbilityType::ReverseGravity),
+    };
+    item_list.infos.insert("MartialScroll".to_string(), martial_scroll);
 }
 
 pub struct ItemsPlugin<S: States> {

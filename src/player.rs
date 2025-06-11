@@ -44,8 +44,7 @@ fn setup_player(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    mut transform_data: ResMut<TransformData>,
-    items: Res<ItemList>,
+    transform_data: ResMut<TransformData>,
 ) {
     let texture = asset_server.load("Art/Adventurer/adventurer-sheet.png");
     let layout = TextureAtlasLayout::from_grid(UVec2::new(50, 37), 20, 10, None, None);
@@ -87,20 +86,6 @@ fn setup_player(
         ActiveItems { items: vec![], current: 0 },
         transform_data.damagable.clone(),
     ));
-
-    commands.spawn((
-        Sprite {
-            image: items.infos.get(&String::from("HealthPotion")).unwrap().icon.clone(),
-            ..default()
-        },
-        Collider::rectangle(20.0, 20.0),
-        Transform::from_xyz(translation.x, translation.y, 0.0),
-        ItemHint,
-        NotpickedItems { id: "HealthPotion".to_string(), num: 5 },
-        Sensor,
-        CollisionEventsEnabled,
-        CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player])
-    )).observe(item_cantpick_observer).observe(item_canpick_observer);
 }
 
 #[derive(Reflect)]
@@ -1236,6 +1221,7 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
         animator.add_parameter("revival", AnimatorParam::Trigger(false));
         animator.add_parameter("is_on_wall", AnimatorParam::Bool(false));
         animator.add_parameter("can_wall_jump", AnimatorParam::Bool(false));
+        animator.add_parameter("can_reverse_gravity", AnimatorParam::Bool(false));
     }
 
     animator.add_state(idle_state);

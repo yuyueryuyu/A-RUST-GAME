@@ -26,11 +26,14 @@ mod pause;
 mod hint;
 mod getitem;
 mod bag_ui;
+mod ending;
+mod blocks;
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
 enum AppState {
     MainMenu,
     InGame,
+    Ending,
 }
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
@@ -70,6 +73,9 @@ fn main() {
         .add_plugins(player::PlayerPlugin {
             state: AppState::InGame,
         })
+        .add_plugins(blocks::BlockPlugin {
+            state: AppState::InGame,
+        })
         .add_plugins(enemy::EnemyPlugin {
             state: AppState::InGame,
         })
@@ -90,6 +96,9 @@ fn main() {
         })
         .add_plugins(hint::HintPlugin {
             state: AppState::InGame,
+        })
+        .add_plugins(ending::EndingPlugin {
+            state: AppState::Ending,
         })
         .add_plugins(save::SavingPlugin)
         .run();

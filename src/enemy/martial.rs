@@ -7,6 +7,7 @@ use std::collections::HashSet;
 
 use crate::animator::Condition;
 use crate::animator::*;
+use crate::blocks::MartialBlocks;
 use crate::controller::ControllerBundle;
 use crate::damagable::{check_hitbox, Damagable, HasHitbox, HitBox, HitboxOf};
 use crate::game_layer::GameLayer;
@@ -622,23 +623,27 @@ fn setup_animator() -> Animator {
 fn on_martial_death(
     mut commands: Commands,
     martial: Single<(Entity, &Transform), With<Martial>>,
+    blocks: Query<Entity, With<MartialBlocks>>,
     items: Res<ItemList>, 
 ) {
     let (entity, transform) = martial.into_inner();
     commands.entity(entity).despawn();
-    /*commands.spawn((
+    commands.spawn((
         Sprite {
             image: items.infos.get(&String::from("MartialScroll")).unwrap().icon.clone(),
             ..default()
         },
         Collider::rectangle(20.0, 20.0),
-        Transform::from_xyz(transform.translation.x, 22.1, 0.0),
+        Transform::from_xyz(120., 39.1, 0.0),
         ItemHint,
         NotpickedItems { id: "MartialScroll".to_string(), num: 1 },
         Sensor,
         CollisionEventsEnabled,
         CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player])
-    )).observe(item_cantpick_observer).observe(item_canpick_observer);*/
+    )).observe(item_cantpick_observer).observe(item_canpick_observer);
+    for block in blocks {
+        commands.entity(block).despawn();
+    }
 } 
 
 #[enter("attack1")]

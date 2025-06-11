@@ -73,6 +73,7 @@ impl PlayerInputBundle {
         input_map.insert(Action::Defense, MouseButton::Right);
         input_map.insert(Action::UseItem, KeyCode::KeyR);
         input_map.insert(Action::PickItem, KeyCode::KeyE);
+        input_map.insert(Action::ReverseGravity, KeyCode::KeyG);
         input_map
     }
 }
@@ -91,6 +92,7 @@ pub enum Action {
     Defense,
     UseItem,
     PickItem,
+    ReverseGravity,
 }
 
 /** 每个动作对应的一些实用方法 */
@@ -266,6 +268,15 @@ fn on_pick(
     }
 }
 
+fn on_reverse(
+    player: Single<(&Animator, &mut GravityScale, &ActionState<Action>), With<Player>>,
+) {
+    let (animator, mut gravity, action_state) = player.into_inner();
+    if action_state.just_pressed(&Action::ReverseGravity) && animator.get_bool("can_reverse_gravity") {
+        gravity.0 = -gravity.0 - 100.;
+    }
+}
+
 pub struct PlayerInputPlugin<S: States> {
     pub state: S,
 }
@@ -285,6 +296,7 @@ impl<S: States> Plugin for PlayerInputPlugin<S> {
                 on_defense.run_if(in_state(self.state.clone())),
                 on_use.run_if(in_state(self.state.clone())),
                 on_pick.run_if(in_state(self.state.clone())),
+                on_reverse.run_if(in_state(self.state.clone())),
             )
         );
     }

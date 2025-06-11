@@ -10,6 +10,8 @@ use crate::animator::*;
 use crate::controller::ControllerBundle;
 use crate::damagable::{check_hitbox, Damagable, HitBox};
 use crate::game_layer::GameLayer;
+use crate::hint::ItemHint;
+use crate::items::{item_canpick_observer, item_cantpick_observer, ItemList, NotpickedItems};
 use crate::physics::PhysicsBundle;
 use crate::player::Player;
 use my_bevy_game::exit;
@@ -31,157 +33,157 @@ fn setup_enemy(
 
     spawn_enemy(
         &mut commands,
-        Vec2::new(640.0, 533.1),
+        Vec2::new(640.0, 553.1),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(730.0, 533.1),
+        Vec2::new(730.0, 553.1),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(820.0, 533.1),
+        Vec2::new(820.0, 553.1),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(2930.0, 37.2),
+        Vec2::new(2930.0, 57.2),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(2886.0, 134.),
+        Vec2::new(2886.0, 154.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(2927.0, 309.),
+        Vec2::new(2927.0, 329.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(400.0, 469.),
+        Vec2::new(400.0, 489.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(1600.0, 469.),
+        Vec2::new(1600.0, 489.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(1720.0, 469.),
+        Vec2::new(1720.0, 489.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(1840.0, 469.),
+        Vec2::new(1840.0, 489.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(1960.0, 469.),
+        Vec2::new(1960.0, 489.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(2160.0, 469.),
+        Vec2::new(2160.0, 489.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(2360.0, 469.),
+        Vec2::new(2360.0, 489.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(2560.0, 469.),
+        Vec2::new(2560.0, 489.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(1787.0, 645.),
+        Vec2::new(1787.0, 665.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(1987.0, 645.),
+        Vec2::new(1987.0, 665.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(2187.0, 645.),
+        Vec2::new(2187.0, 665.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(2345.0, 645.),
+        Vec2::new(2345.0, 665.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(977.0, 597.),
+        Vec2::new(977.0, 617.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(1177.0, 597.),
+        Vec2::new(1177.0, 617.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(1377.0, 597.),
+        Vec2::new(1377.0, 617.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(1528.0, 597.),
+        Vec2::new(1528.0, 617.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(41., 554.),
+        Vec2::new(41., 574.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(241., 554.),
+        Vec2::new(241., 574.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(441., 554.),
+        Vec2::new(441., 574.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(541., 554.),
+        Vec2::new(541., 574.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
@@ -508,9 +510,28 @@ fn on_death_enter(
 }
 
 #[exit("death")]
-fn on_death_exit(mut commands: Commands) {
+fn on_death_exit(
+    mut commands: Commands, 
+    items: Res<ItemList>, 
+    transform: Query<&Transform, With<FlyingEyes>>,
+) {
     let entity = trigger.entity;
+    let x = transform.get(entity).unwrap().translation.x;
+    let y = transform.get(entity).unwrap().translation.y;
     commands.entity(entity).despawn();
+    commands.spawn((
+        Sprite {
+            image: items.infos.get(&String::from("HealthPotion")).unwrap().icon.clone(),
+            ..default()
+        },
+        Collider::rectangle(20.0, 20.0),
+        Transform::from_xyz(x, y, 0.0),
+        ItemHint,
+        NotpickedItems { id: "HealthPotion".to_string(), num: 1 },
+        Sensor,
+        CollisionEventsEnabled,
+        CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player])
+    )).observe(item_cantpick_observer).observe(item_canpick_observer);
 }
 
 fn check_contact(

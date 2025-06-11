@@ -79,7 +79,7 @@ fn print_started_collisions(
     for CollisionStarted(entity1, entity2) in collision_event_reader.read() {
         if (player.contains(*entity1) && hint.contains(*entity2)) ||
            (player.contains(*entity2) && hint.contains(*entity1))  {
-            text.0 = "Move: [W] [A] [S] [D]".to_string();
+            text.0 = "Move: [W] [A] [S] [D] \nOpen Item Bag: [Esc][Open Bag]".to_string();
         }
         if (player.contains(*entity1) && bhint.contains(*entity2)) ||
            (player.contains(*entity2) && bhint.contains(*entity1))  {

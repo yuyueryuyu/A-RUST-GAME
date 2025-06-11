@@ -146,7 +146,7 @@ fn spawn_box(
         bag_node,
     )).with_children(|parent| {
         parent.spawn((
-            bag_text, font.clone(), Label, MenuItem { id: 1, is_selected : true }
+            bag_text, font.clone(), Label, MenuItem { id: 1, is_selected : false }
         ));
     }).id();
 

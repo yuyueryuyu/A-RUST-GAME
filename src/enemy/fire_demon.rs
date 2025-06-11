@@ -7,6 +7,7 @@ use std::collections::HashSet;
 
 use crate::animator::Condition;
 use crate::animator::*;
+use crate::blocks::FireDemonBlocks;
 use crate::controller::ControllerBundle;
 use crate::damagable::{check_hitbox, Damagable, HasHitbox, HitBox, HitboxOf};
 use crate::game_layer::GameLayer;
@@ -24,6 +25,7 @@ fn setup_enemy(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    items: Res<ItemList>,
 ) {
     let texture =
         asset_server.load("Art/boss_demon_slime_FREE_v1.0/spritesheets/demon_slime_sheet.png");
@@ -36,6 +38,21 @@ fn setup_enemy(
         texture.clone(),
         texture_atlas_layout.clone(),
     );
+
+    commands.spawn((
+        Sprite {
+            image: items.infos.get(&String::from("HealthPotion")).unwrap().icon.clone(),
+            ..default()
+        },
+        Collider::rectangle(20.0, 20.0),
+        Transform::from_xyz(1480.0, 124.1, 0.0),
+        ItemHint,
+        NotpickedItems { id: "HealthPotion".to_string(), num: 5 },
+        Sensor,
+        CollisionEventsEnabled,
+        CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player])
+    )).observe(item_cantpick_observer).observe(item_canpick_observer);
+    
 }
 
 fn spawn_enemy(
@@ -392,6 +409,7 @@ fn setup_animator() -> Animator {
 fn on_fire_demon_death(
     mut commands: Commands,
     demon: Single<(Entity, &Transform), With<FireDemon>>,
+    blocks: Query<Entity, With<FireDemonBlocks>>,
     items: Res<ItemList>, 
 ) {
     let (entity, transform) = demon.into_inner();
@@ -409,6 +427,9 @@ fn on_fire_demon_death(
         CollisionEventsEnabled,
         CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player])
     )).observe(item_cantpick_observer).observe(item_canpick_observer);
+    for block in blocks {
+        commands.entity(block).despawn();
+    }
 } 
 
 #[enter("attack")]

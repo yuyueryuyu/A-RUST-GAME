@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["scroll_credits_system","setup_credits"],"struct":["CreditText","EndingPlugin","ScrollingCredits"]};

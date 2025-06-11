@@ -1,21 +1,34 @@
-use crate::{animator::*, damagable, save::load};
+//! 生命、受伤系统
+
+use crate::{animator::*, save::load};
 use avian2d::prelude::*;
-use bevy::{prelude::*, state::commands};
+use bevy::prelude::*;
 use bevy_kira_audio::{Audio, AudioControl};
 use bevy_tnua::{builtins::*, prelude::*};
 use serde::{Serialize, Deserialize};
 
+/// 生命、受伤组件
 #[derive(Component, Clone, Debug, Reflect, Serialize, Deserialize)]
 pub struct Damagable {
+    /// 最大血量
     pub max_health: f32,
+    /// 血量
     pub health: f32,
+    /// 回复量
     pub healing_amount: f32,
+    /// 最大架势条
     pub max_posture: f32,
+    /// 架势
     pub posture: f32,
+    /// 当前是否存活
     pub is_alive: bool,
+    /// 是否无敌状态
     pub is_invincible: bool,
+    /// 是否防守状态
     pub is_defending: bool,
+    /// 防守时间
     pub defending_time: f32,
+    /// 无敌时间
     pub invincibility_time: f32,
     pub time_since_hit: f32,
     pub time_since_defend: f32,
@@ -23,6 +36,7 @@ pub struct Damagable {
 }
 
 impl Damagable {
+    /// 新建组件
     pub fn new(max_health: f32) -> Self {
         Damagable {
             max_health: max_health.clone(),
@@ -57,6 +71,7 @@ impl Damagable {
         self.time_since_death = dam.time_since_death;
     }
 
+    /// 设置生命值
     pub fn set_health(&mut self, health: f32) {
         self.health = health;
         if self.health <= 0. {
@@ -67,25 +82,30 @@ impl Damagable {
         }
     }
 
+    /// 设置架势调
     pub fn set_posture(&mut self, posture: f32) {
         self.posture = posture;
     }
 
+    /// 设置无敌状态
     pub fn set_invincible(&mut self, value: bool) {
         self.is_invincible = value;
         self.time_since_hit = 0.;
     }
 
+    /// 设置无敌状态、时间
     pub fn set_invincible_with_time(&mut self, invincible_time: f32) {
         self.is_invincible = true;
         self.time_since_hit = self.invincibility_time-invincible_time;
     }
 
+    /// 设置防守状态
     pub fn set_defending(&mut self, value: bool) {
         self.is_defending = value;
         self.time_since_defend = 0.;
     }
 
+    /// 受到攻击
     pub fn take_hit(&mut self, damage: f32) {
         if self.is_alive && !self.is_invincible {
             self.set_invincible(true);
@@ -102,11 +122,13 @@ impl Damagable {
         println!("Health: {} Posture: {}", self.health, self.posture);
     }
 
+    /// 治疗
     pub fn healing(&mut self) {
         self.set_health(self.health + self.healing_amount);
     }
 }
 
+/// 检查无敌状态
 fn check_invincible(time: Res<Time>, mut query: Query<(&mut Animator, &mut Damagable)>) {
     for (mut animator, mut damagable) in &mut query {
         if !damagable.is_alive {
@@ -121,10 +143,11 @@ fn check_invincible(time: Res<Time>, mut query: Query<(&mut Animator, &mut Damag
     }
 }
 
+/// 检查防守状态
 fn check_defending(time: Res<Time>, mut query: Query<&mut Damagable>) {
-    for (mut damagable) in &mut query {
+    for mut damagable in &mut query {
         if damagable.posture >= damagable.max_posture {
-            // hitdown
+            // 破防
             damagable.set_posture(0.);
         }
         if damagable.is_defending {
@@ -136,13 +159,13 @@ fn check_defending(time: Res<Time>, mut query: Query<&mut Damagable>) {
     }
 }
 
+/// 检查是否死亡
 fn check_death(time: Res<Time>, mut query: Query<(&mut Animator, &mut Damagable, &mut Transform)>) {
     for (mut animator, mut damagable, mut transform) in &mut query {
         if !damagable.is_alive {
             damagable.time_since_death += time.delta_secs();
         }
         if damagable.time_since_death > 5. {
-            
             let trans_data = load().unwrap();
             transform.translation.x = trans_data.translation[0];
             transform.translation.y = trans_data.translation[1];
@@ -155,20 +178,24 @@ fn check_death(time: Res<Time>, mut query: Query<(&mut Animator, &mut Damagable,
     }
 }
 
-
+/// hitbox关系
 #[derive(Component)]
 #[relationship(relationship_target = HasHitbox)]
 pub struct HitboxOf(pub Entity);
 
+/// hitbox关系
 #[derive(Component, Deref)]
 #[relationship_target(relationship = HitboxOf)]
 pub struct HasHitbox(Vec<Entity>);
 
+/// hitbox组件
 #[derive(Component)]
 pub struct HitBox {
+    /// 伤害
     pub damage: f32,
 }
 
+/// 检查受攻击
 pub fn check_hitbox(
     trigger: Trigger<OnCollisionStart>,
     hitbox_query: Query<(&GlobalTransform, &HitBox)>,

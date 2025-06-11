@@ -1,20 +1,21 @@
+//! 飞行眼睛敌人
+
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use bevy_kira_audio::{Audio, AudioInstance};
 use big_brain::prelude::*;
-use my_bevy_game::enter;
-use std::collections::HashSet;
+use game_derive::enter;
+use game_derive::exit;
+use rand::Rng;
 
 use crate::animator::Condition;
 use crate::animator::*;
 use crate::controller::ControllerBundle;
-use crate::damagable::{check_hitbox, Damagable, HitBox};
+use crate::damagable::{check_hitbox, Damagable, HasHitbox, HitBox, HitboxOf};
 use crate::game_layer::GameLayer;
 use crate::hint::ItemHint;
 use crate::items::{item_canpick_observer, item_cantpick_observer, ItemList, NotpickedItems};
 use crate::physics::PhysicsBundle;
 use crate::player::Player;
-use my_bevy_game::exit;
 mod behaviour;
 use behaviour::*;
 
@@ -33,157 +34,109 @@ fn setup_enemy(
 
     spawn_enemy(
         &mut commands,
-        Vec2::new(640.0, 553.1),
+        Vec2::new(640.0, 573.1),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(730.0, 553.1),
+        Vec2::new(820.0, 573.1),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(820.0, 553.1),
+        Vec2::new(2886.0, 174.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(2930.0, 57.2),
+        Vec2::new(1400.0, 509.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(2886.0, 154.),
+        Vec2::new(1600.0, 509.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(2927.0, 329.),
+        Vec2::new(1840.0, 509.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(400.0, 489.),
+        Vec2::new(1960.0, 509.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(1600.0, 489.),
+        Vec2::new(2160.0, 509.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(1720.0, 489.),
+        Vec2::new(2360.0, 509.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(1840.0, 489.),
+        Vec2::new(1787.0, 685.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(1960.0, 489.),
+        Vec2::new(1987.0, 685.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(2160.0, 489.),
+        Vec2::new(2345.0, 685.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(2360.0, 489.),
+        Vec2::new(977.0, 637.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(2560.0, 489.),
+        Vec2::new(1177.0, 637.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(1787.0, 665.),
+        Vec2::new(1528.0, 637.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(1987.0, 665.),
+        Vec2::new(41., 594.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(2187.0, 665.),
+        Vec2::new(241., 594.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
     spawn_enemy(
         &mut commands,
-        Vec2::new(2345.0, 665.),
-        texture.clone(),
-        texture_atlas_layout.clone(),
-    );
-    spawn_enemy(
-        &mut commands,
-        Vec2::new(977.0, 617.),
-        texture.clone(),
-        texture_atlas_layout.clone(),
-    );
-    spawn_enemy(
-        &mut commands,
-        Vec2::new(1177.0, 617.),
-        texture.clone(),
-        texture_atlas_layout.clone(),
-    );
-    spawn_enemy(
-        &mut commands,
-        Vec2::new(1377.0, 617.),
-        texture.clone(),
-        texture_atlas_layout.clone(),
-    );
-    spawn_enemy(
-        &mut commands,
-        Vec2::new(1528.0, 617.),
-        texture.clone(),
-        texture_atlas_layout.clone(),
-    );
-    spawn_enemy(
-        &mut commands,
-        Vec2::new(41., 574.),
-        texture.clone(),
-        texture_atlas_layout.clone(),
-    );
-    spawn_enemy(
-        &mut commands,
-        Vec2::new(241., 574.),
-        texture.clone(),
-        texture_atlas_layout.clone(),
-    );
-    spawn_enemy(
-        &mut commands,
-        Vec2::new(441., 574.),
-        texture.clone(),
-        texture_atlas_layout.clone(),
-    );
-    spawn_enemy(
-        &mut commands,
-        Vec2::new(541., 574.),
+        Vec2::new(541., 584.),
         texture.clone(),
         texture_atlas_layout.clone(),
     );
@@ -217,7 +170,7 @@ fn spawn_enemy(
         .when(NoticeScorer, move_and_attack)
         .when(PatrolScorer, patrol);
 
-    commands.spawn((
+    let entity = commands.spawn((
         Sprite {
             image: texture,
             texture_atlas: Some(TextureAtlas {
@@ -243,8 +196,18 @@ fn spawn_enemy(
         Damagable::new(100.),
         animator,
         Notice::new(0.0, 50.0, 10.0),
-        thinker,
-    ));
+        thinker, 
+    )).id();
+    commands.spawn((
+            Collider::rectangle(30., 30.),
+            Transform::from_xyz(0., 0., 0.),
+            Sensor,
+            HitBox { damage: 20. },
+            CollisionLayers::new(GameLayer::EnemyHitBox, [GameLayer::Player]),
+            CollisionEventsEnabled,
+            ChildOf(entity),
+            HitboxOf(entity),
+        )).observe(check_hitbox);
 }
 
 #[derive(Component, Reflect)]
@@ -502,11 +465,15 @@ fn setup_animator() -> Animator {
 
 #[enter("death")]
 fn on_death_enter(
-    mut player: Query<&mut Animator, With<FlyingEyes>>,
+    mut commands: Commands,
+    mut player: Query<(&mut Animator, &HasHitbox), With<FlyingEyes>>,
 ) {
     let entity = trigger.entity;
-    let mut animator = player.get_mut(entity).unwrap();
+    let (mut animator, hitboxes) = player.get_mut(entity).unwrap();
     animator.set_bool("can_move", false);
+    for hitbox in (**hitboxes).clone() {
+        commands.entity(hitbox).despawn();
+    }
 }
 
 #[exit("death")]
@@ -519,19 +486,22 @@ fn on_death_exit(
     let x = transform.get(entity).unwrap().translation.x;
     let y = transform.get(entity).unwrap().translation.y;
     commands.entity(entity).despawn();
-    commands.spawn((
-        Sprite {
-            image: items.infos.get(&String::from("HealthPotion")).unwrap().icon.clone(),
-            ..default()
-        },
-        Collider::rectangle(20.0, 20.0),
-        Transform::from_xyz(x, y, 0.0),
-        ItemHint,
-        NotpickedItems { id: "HealthPotion".to_string(), num: 1 },
-        Sensor,
-        CollisionEventsEnabled,
-        CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player])
-    )).observe(item_cantpick_observer).observe(item_canpick_observer);
+    let rand :f32 = rand::rng().random();
+    if rand < 0.2 {
+        commands.spawn((
+            Sprite {
+                image: items.infos.get(&String::from("HealthPotion")).unwrap().icon.clone(),
+                ..default()
+            },
+            Collider::rectangle(20.0, 20.0),
+            Transform::from_xyz(x, y, 0.0),
+            ItemHint,
+            NotpickedItems { id: "HealthPotion".to_string(), num: 1 },
+            Sensor,
+            CollisionEventsEnabled,
+            CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player])
+        )).observe(item_cantpick_observer).observe(item_canpick_observer);
+    }
 }
 
 fn check_contact(

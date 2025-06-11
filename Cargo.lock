@@ -2617,6 +2617,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "game_derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.101",
+]
+
+[[package]]
 name = "gethostname"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3438,13 +3447,11 @@ dependencies = [
  "bevy_ecs_tilemap",
  "bevy_kira_audio",
  "big-brain",
+ "game_derive",
  "leafwing-input-manager",
  "moonshine-save",
- "proc-macro2",
- "quote",
  "rand 0.9.1",
  "serde",
- "syn 2.0.101",
  "tiled",
 ]
 

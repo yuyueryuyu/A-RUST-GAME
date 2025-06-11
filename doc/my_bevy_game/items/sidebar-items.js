@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["AbilityType","ConsumableType","ItemType"],"fn":["init_items","item_canpick_observer","item_cantpick_observer","pick_item_observer","use_potion_observer"],"struct":["ActiveItems","HasItem","ItemBag","ItemInfo","ItemList","ItemNear","ItemOf","ItemsPlugin","NearingItem","NotpickedItems","PickItemTrigger","UseItemTrigger"]};

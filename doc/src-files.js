@@ -1,0 +1,3 @@
+var srcIndex = new Map(JSON.parse('[["my_bevy_game",["",[["enemy",[["castle_skeleton",[],["behaviour.rs"]],["fire_demon",[],["behaviour.rs"]],["flying_eye",[],["behaviour.rs"]],["martial",[],["behaviour.rs"]],["skeleton",[],["behaviour.rs"]]],["castle_skeleton.rs","fire_demon.rs","flying_eye.rs","martial.rs","skeleton.rs"]]],["animator.rs","background.rs","bag_ui.rs","blocks.rs","camera.rs","controller.rs","damagable.rs","ending.rs","enemy.rs","game_layer.rs","getitem.rs","healthbar.rs","hint.rs","input.rs","items.rs","main.rs","menu.rs","pause.rs","physics.rs","player.rs","save.rs","tiles.rs"]]]]'));
+createSrcSidebar();
+//{"start":36,"fragment_lengths":[567]}

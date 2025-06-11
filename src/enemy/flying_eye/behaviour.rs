@@ -1,6 +1,8 @@
+//! 飞行眼睛行为树
 use crate::animator::*;
 use crate::enemy::flying_eye::FlyingEyes;
 use crate::player::Player;
+use avian2d::prelude::LinearVelocity;
 use bevy::prelude::*;
 use bevy_tnua::builtins::*;
 use bevy_tnua::math::*;
@@ -131,14 +133,14 @@ pub fn move_to_player_action_system(
 pub struct Attack;
 
 pub fn attack_action_system(
-    mut enemy_query: Query<(&Transform, &mut Animator), Without<Player>>,
+    mut enemy_query: Query<(&Transform, &mut Animator, &mut TnuaController, &LinearVelocity), Without<Player>>,
     player_pos: Single<&Transform, With<Player>>,
     mut query: Query<(&Actor, &mut ActionState, &Attack, &ActionSpan)>,
 ) {
     for (Actor(actor), mut state, _attack, span) in &mut query {
         let _guard = span.span().enter();
 
-        let (actor_pos, mut animator) = enemy_query
+        let (actor_pos, mut animator, mut controller, vel) = enemy_query
             .get_mut(*actor)
             .expect("actor did't have notice");
 
@@ -146,18 +148,41 @@ pub fn attack_action_system(
             ActionState::Requested => {
                 let delta = (player_pos.translation - actor_pos.translation).truncate();
                 let distance = delta.length();
-
+                let facing_direction = if delta.x.trunc() > 0. {
+                    1.
+                } else if delta.x.trunc() < 0. {
+                    -1.
+                } else {
+                    0.
+                };
                 if distance < MAX_DISTANCE {
                     animator.set_trigger("attack");
+                    
+                    controller.basis(TnuaBuiltinWalk {
+                        desired_velocity: Vec3::new(360. * facing_direction, 0., 0.),
+                        float_height: 18.,
+                        air_acceleration: 600.,
+                        acceleration: 600.,
+                        max_slope: float_consts::FRAC_PI_4,
+                        ..Default::default()
+                    });
                     *state = ActionState::Executing;
                 } else {
                     *state = ActionState::Failure;
                 }
             }
             ActionState::Executing => {
-                if !animator.is_active("attack") {
+                if !animator.in_state("Attack".to_string()) {
                     *state = ActionState::Success;
                 }
+                controller.basis(TnuaBuiltinWalk {
+                    desired_velocity: Vec3::new(vel.x, 0., 0.),
+                    float_height: 18.,
+                    air_acceleration: 600.,
+                    acceleration: 600.,
+                    max_slope: float_consts::FRAC_PI_4,
+                    ..Default::default()
+                });
             }
             ActionState::Cancelled => {
                 *state = ActionState::Failure;

@@ -1,9 +1,10 @@
+//! 初始关骷髅怪物
+
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use bevy_kira_audio::{Audio, AudioInstance};
 use big_brain::prelude::*;
-use my_bevy_game::{enter, exit};
-use std::collections::HashSet;
+use game_derive::enter;
+use game_derive::exit;
 
 use crate::animator::Condition;
 use crate::animator::*;
@@ -15,9 +16,11 @@ use crate::player::Player;
 mod behaviour;
 use behaviour::*;
 
+/// 骷髅标识
 #[derive(Component, Reflect)]
 struct Skeleton;
 
+/// 初始化敌人
 fn setup_enemy(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -72,6 +75,7 @@ fn setup_enemy(
     );
 }
 
+/// 生成单个敌人
 fn spawn_enemy(
     commands: &mut Commands,
     position: Vec2,
@@ -130,6 +134,7 @@ fn spawn_enemy(
     ));
 }
 
+/// 动画类型
 #[derive(Component, Reflect)]
 enum AnimationType {
     AttackPrep,
@@ -159,6 +164,8 @@ impl AnimationType {
     }
 }
 
+
+/// 初始化动画状态机
 fn setup_animator() -> Animator {
     let idle_state = AnimationState {
         name: "Idle".to_string(),
@@ -398,12 +405,14 @@ fn setup_animator() -> Animator {
     animator
 }
 
+/// 死亡状态
 #[exit("death")]
 fn on_death_exit(mut commands: Commands) {
     let entity = trigger.entity;
     commands.entity(entity).despawn();
 }
 
+/// 进入攻击状态
 #[enter("attack")]
 fn on_attack_enter(
     mut commands: Commands
@@ -421,6 +430,7 @@ fn on_attack_enter(
         )).observe(check_hitbox);
 }
 
+/// 退出攻击状态
 #[exit("attack")]
 fn on_attack_exit(
     mut commands: Commands,
@@ -434,7 +444,7 @@ fn on_attack_exit(
     }
 }
 
-
+/// 进入硬直状态
 #[enter("stun")]
 fn on_stun_enter(
     mut player: Query<&mut Animator, With<Skeleton>>,
@@ -444,6 +454,7 @@ fn on_stun_enter(
     animator.set_bool("can_move", false);
 }
 
+/// 退出硬直状态
 #[exit("stun")]
 fn on_stun_exit(
     mut player: Query<&mut Animator, With<Skeleton>>,
@@ -453,6 +464,7 @@ fn on_stun_exit(
     animator.set_bool("can_move", true);
 }
 
+/// 检查接触
 fn check_contact(
     spatial_query: SpatialQuery,
     mut query: Query<(&Transform, &mut Animator, &Collider), With<Skeleton>>,
@@ -531,6 +543,7 @@ fn check_contact(
     }
 }
 
+/// 检查调转方向
 fn on_flip_direction(mut query: Query<(&mut Transform, &Animator), With<Skeleton>>) {
     for (mut transform, animator) in &mut query {
         let facing_direction = animator.get_float("facing_direction");
@@ -540,6 +553,7 @@ fn on_flip_direction(mut query: Query<(&mut Transform, &Animator), With<Skeleton
     }
 }
 
+/// 检查移动
 fn on_move(mut query: Query<(&LinearVelocity, &mut Animator), With<Skeleton>>) {
     for (vel, mut animator) in query.iter_mut() {
         let is_moving = vel.x != 0.;

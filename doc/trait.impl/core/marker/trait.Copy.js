@@ -1,0 +1,9 @@
+(function() {
+    var implementors = Object.fromEntries([["my_bevy_game",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.85.0/core/marker/trait.Copy.html\" title=\"trait core::marker::Copy\">Copy</a> for <a class=\"enum\" href=\"my_bevy_game/animator/enum.ConditionOperator.html\" title=\"enum my_bevy_game::animator::ConditionOperator\">ConditionOperator</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.85.0/core/marker/trait.Copy.html\" title=\"trait core::marker::Copy\">Copy</a> for <a class=\"enum\" href=\"my_bevy_game/input/enum.Action.html\" title=\"enum my_bevy_game::input::Action\">Action</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.85.0/core/marker/trait.Copy.html\" title=\"trait core::marker::Copy\">Copy</a> for <a class=\"enum\" href=\"my_bevy_game/items/enum.AbilityType.html\" title=\"enum my_bevy_game::items::AbilityType\">AbilityType</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.85.0/core/marker/trait.Copy.html\" title=\"trait core::marker::Copy\">Copy</a> for <a class=\"enum\" href=\"my_bevy_game/items/enum.ConsumableType.html\" title=\"enum my_bevy_game::items::ConsumableType\">ConsumableType</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.85.0/core/marker/trait.Copy.html\" title=\"trait core::marker::Copy\">Copy</a> for <a class=\"enum\" href=\"my_bevy_game/items/enum.ItemType.html\" title=\"enum my_bevy_game::items::ItemType\">ItemType</a>"]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[1417]}

@@ -1,37 +1,47 @@
-use bevy::{asset::StrongHandle, prelude::*, scene::ron};
+//! 存档/读档功能
+
+use bevy::{prelude::*, scene::ron};
 use moonshine_save::prelude::*;
 
-use std::{collections::{HashMap, HashSet}, path::{Path, PathBuf}, sync::Arc};
-use bevy::prelude::*;
-use moonshine_save::prelude::*;
+use std::{collections::{HashMap}, path::{Path, PathBuf}};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{Read, Write};
 
 use crate::{animator::{Animator, AnimatorParam}, damagable::Damagable, player::Player};
 
-// Save request with a dynamic path
+/// 存档事件
 #[derive(Event)]
 pub struct SaveRequest {
+    /// 存档路径
     path: PathBuf,
 }
 
 impl GetFilePath for SaveRequest {
+    /// 获取存档路径
     fn path(&self) -> &Path {
         self.path.as_ref()
     }
 }
 
-// Load request with a dynamic path
+/// 读档事件
 #[derive(Event)]
 pub struct LoadRequest {
+    /// 读档路径 
     path: PathBuf,
 }
 
+impl GetFilePath for LoadRequest {
+    fn path(&self) -> &Path {
+        self.path.as_ref()
+    }
+}
+
+/// 存档数据
 #[derive(Serialize, Deserialize, Resource)]
 pub struct TransformData {
     pub translation: [f32; 3],
-    pub rotation: [f32; 4],  // 四元数 (x, y, z, w)
+    pub rotation: [f32; 4], 
     pub scale: [f32; 3],
     pub params: HashMap<String, AnimatorParam>,
     pub damagable: Damagable,
@@ -49,25 +59,22 @@ impl Default for TransformData {
             1.0,],
             scale:[1.0, 1.0, 1.0],
             params: HashMap::new(),
-            damagable: Damagable::new(100.),
+            damagable: Damagable::new(150.),
         }
     }
 }
 
-impl GetFilePath for LoadRequest {
-    fn path(&self) -> &Path {
-        self.path.as_ref()
-    }
+/// 触发存档事件
+pub fn _trigger_save(mut events: EventWriter<SaveRequest>) {
+    events.write(SaveRequest { path: "saved.ron".into() });
 }
 
-pub fn trigger_save(mut events: EventWriter<SaveRequest>) {
-    events.send(SaveRequest { path: "saved.ron".into() });
+/// 触发读档事件
+pub fn _trigger_load(mut events: EventWriter<LoadRequest>) {
+    events.write(LoadRequest { path: "saved.ron".into() });
 }
 
-pub fn trigger_load(mut events: EventWriter<LoadRequest>) {
-    events.send(LoadRequest { path: "saved.ron".into() });
-}
-
+/// 存档
 pub fn save(player: Single<(&Transform, &Animator, &Damagable), With<Player>>) {
     let (transform, animator, dam) = player.into_inner();
     let transform_data = TransformData {
@@ -96,6 +103,7 @@ pub fn save(player: Single<(&Transform, &Animator, &Damagable), With<Player>>) {
     file.write_all(ron_string.as_bytes()).unwrap();
 }
 
+/// 读档
 pub fn load() -> Option<TransformData> {
     let mut file = match File::open("save.ron") {
         Ok(file) => file,
@@ -124,7 +132,7 @@ pub fn load() -> Option<TransformData> {
     Some(transform)
 }
 
-
+/// 存档插件
 pub struct SavingPlugin;
 
 impl Plugin for SavingPlugin {
@@ -139,6 +147,7 @@ impl Plugin for SavingPlugin {
     }
 }
 
+/// 仅当要求存档的时候进行存档
 fn should_save(events: EventReader<SaveRequest>) -> bool {
     !events.is_empty()
 }

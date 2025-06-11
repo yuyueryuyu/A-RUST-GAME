@@ -1,21 +1,18 @@
 use bevy::prelude::*;
-use moonshine_save::load;
+use crate::PausedState;
 
-use crate::animator::Animator;
-use crate::damagable::Damagable;
-use crate::player::Player;
-use crate::{AppState, PausedState};
-use crate::save::load;
-use crate::save::{trigger_save, LoadRequest, SaveRequest};
+/// 菜单选项
 #[derive(Component)]
 pub struct MenuItem {
     pub id: i32,
     pub is_selected: bool,
 }
 
+/// 整个UI的标识组件
 #[derive(Component)]
 pub struct UI;
 
+/// 生成菜单
 fn spawn_box(
     mut commands: Commands, 
     asset_server: Res<AssetServer>,
@@ -78,7 +75,7 @@ fn spawn_box(
         ..default()
     };
 
-    let save_node = Node {
+    let exit_node = Node {
         position_type: PositionType::Absolute,
         width: Val::Percent(100.),
         height: Val::Percent(10.),
@@ -87,30 +84,8 @@ fn spawn_box(
         //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
         ..default()
     };
-
-    let load_node = Node {
-        position_type: PositionType::Absolute,
-        width: Val::Percent(100.),
-        height: Val::Percent(10.),
-        top: Val::Percent(65.),
-        justify_content: JustifyContent::Center,
-        //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
-        ..default()
-    };
-
-    let exit_node = Node {
-        position_type: PositionType::Absolute,
-        width: Val::Percent(100.),
-        height: Val::Percent(10.),
-        top: Val::Percent(75.),
-        justify_content: JustifyContent::Center,
-        //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
-        ..default()
-    };
     let start_text = Text::new("[ Continue ]");
     let bag_text = Text::new("Open Bag");
-    let save_text = Text::new("Save Game");
-    let load_text = Text::new("Load Game");
     let exit_text = Text::new("Game Exit");
     let font = TextFont {
         font: asset_server.load("UI/Fonts/m5x7.ttf"),
@@ -150,27 +125,11 @@ fn spawn_box(
         ));
     }).id();
 
-    let save_node_entity = commands.spawn((
-        save_node,
-    )).with_children(|parent| {
-        parent.spawn((
-            save_text, font.clone(), Label, MenuItem { id: 2, is_selected : false }
-        ));
-    }).id();
-
-    let load_node_entity = commands.spawn((
-        load_node,
-    )).with_children(|parent| {
-        parent.spawn((
-            load_text, font.clone(), Label, MenuItem { id: 3, is_selected : false }
-        ));
-    }).id();
-
     let exit_node_entity = commands.spawn((
         exit_node,
     )).with_children(|parent| {
         parent.spawn((
-            exit_text, font.clone(), Label, MenuItem { id: 4, is_selected : false }
+            exit_text, font.clone(), Label, MenuItem { id: 2, is_selected : false }
         ));
     }).id();
 
@@ -179,10 +138,11 @@ fn spawn_box(
         .add_children(&[title_entity, choice_entity]);
     commands
         .entity(choice_entity)
-        .add_children(&[start_node_entity, bag_node_entity, save_node_entity, load_node_entity, exit_node_entity]);
+        .add_children(&[start_node_entity, bag_node_entity, exit_node_entity]);
     //commands.entity(text_node_entity).add_children(&[text_entity]);
 }
 
+/// 处理上下选择
 fn handle_choice(
     mut items: Query<(&mut Text, &mut MenuItem)>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
@@ -241,6 +201,7 @@ fn handle_choice(
     }
 }
 
+/// 处理确认输入
 fn handle_enter(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     items: Query<&MenuItem>,
@@ -248,8 +209,6 @@ fn handle_enter(
     ui: Query<Entity, With<UI>>,
     mut next_state: ResMut<NextState<PausedState>>,
     mut exit_events: EventWriter<AppExit>,
-    save_events: EventWriter<SaveRequest>,
-    mut player: Single<(&mut Transform, &mut Animator, &mut Damagable), With<Player>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Enter) {
         for item in &items {
@@ -264,33 +223,7 @@ fn handle_enter(
                         commands.entity(entity).despawn();
                     }
                     next_state.set(PausedState::BagUI);
-                }  if item.id == 2 {
-                    trigger_save(save_events);
-                    //trigger_load(load_events)
-                    if let Ok(entity) = ui.single() {
-                        commands.entity(entity).despawn();
-                    }
-                    next_state.set(PausedState::Running);
-                }  else if item.id == 3 {
-                    let transform = load().unwrap();
-                    let (
-                        mut trans, 
-                        mut animator,
-                        mut dam,
-                    ) = player.into_inner();
-                    trans.translation.x = transform.translation[0];
-                    trans.translation.y = transform.translation[1];
-                    trans.translation.z = transform.translation[2];
-                    trans.scale.x = transform.scale[0];
-                    trans.scale.y = transform.scale[1];
-                    trans.scale.z = transform.scale[2];
-                    animator.parameters = transform.params;
-                    dam.copy(transform.damagable);
-                    if let Ok(entity) = ui.single() {
-                        commands.entity(entity).despawn();
-                    }
-                    next_state.set(PausedState::Running);
-                } else if item.id == 4 {
+                } else if item.id == 2 {
                     exit_events.write(AppExit::Success);
                 }
                 break;
@@ -304,6 +237,7 @@ fn handle_enter(
     }
 }
 
+/// 处理进入菜单画面
 fn handle_pause(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut next_state: ResMut<NextState<PausedState>>,

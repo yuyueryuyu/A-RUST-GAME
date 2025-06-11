@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["MAX_DISTANCE","NOTICED_SPEED","WALK_SPEED"],"fn":["attack_action_system","get_speed","move_to_player_action_system","notice_scorer_system","notice_system","patrol_action_system","patrol_scorer_system"],"struct":["Attack","MoveToPlayer","Notice","NoticeScorer","Patrol","PatrolScorer","SkeletonBehaviourPlugin"]};

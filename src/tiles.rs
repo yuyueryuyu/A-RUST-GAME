@@ -1,11 +1,13 @@
+//! 调用bevy_ecs_tilemap包，导入Tiled地图。
+
 use bevy::prelude::*;
 use bevy_ecs_tiled::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use avian2d::prelude::*;
-use tiled::Map;
 
 use crate::game_layer::GameLayer;
 
+/// 导入并初始化地图
 fn setup_tilesets(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         TiledMapHandle(

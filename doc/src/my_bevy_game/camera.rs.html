@@ -1,0 +1,494 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src\camera.rs`."><title>camera.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-46132b98.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="my_bevy_game" data-themes="" data-resource-suffix="" data-rustdoc-version="1.85.0 (4d91de4e4 2025-02-17)" data-channel="1.85.0" data-search-js="search-75f5ac3e.js" data-settings-js="settings-0f613d39.js" ><script src="../../static.files/storage-59e33391.js"></script><script defer src="../../static.files/src-script-56102188.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">my_bevy_game/</div>camera.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<a href="#1" id="1">1</a>
+<a href="#2" id="2">2</a>
+<a href="#3" id="3">3</a>
+<a href="#4" id="4">4</a>
+<a href="#5" id="5">5</a>
+<a href="#6" id="6">6</a>
+<a href="#7" id="7">7</a>
+<a href="#8" id="8">8</a>
+<a href="#9" id="9">9</a>
+<a href="#10" id="10">10</a>
+<a href="#11" id="11">11</a>
+<a href="#12" id="12">12</a>
+<a href="#13" id="13">13</a>
+<a href="#14" id="14">14</a>
+<a href="#15" id="15">15</a>
+<a href="#16" id="16">16</a>
+<a href="#17" id="17">17</a>
+<a href="#18" id="18">18</a>
+<a href="#19" id="19">19</a>
+<a href="#20" id="20">20</a>
+<a href="#21" id="21">21</a>
+<a href="#22" id="22">22</a>
+<a href="#23" id="23">23</a>
+<a href="#24" id="24">24</a>
+<a href="#25" id="25">25</a>
+<a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
+<a href="#28" id="28">28</a>
+<a href="#29" id="29">29</a>
+<a href="#30" id="30">30</a>
+<a href="#31" id="31">31</a>
+<a href="#32" id="32">32</a>
+<a href="#33" id="33">33</a>
+<a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
+<a href="#36" id="36">36</a>
+<a href="#37" id="37">37</a>
+<a href="#38" id="38">38</a>
+<a href="#39" id="39">39</a>
+<a href="#40" id="40">40</a>
+<a href="#41" id="41">41</a>
+<a href="#42" id="42">42</a>
+<a href="#43" id="43">43</a>
+<a href="#44" id="44">44</a>
+<a href="#45" id="45">45</a>
+<a href="#46" id="46">46</a>
+<a href="#47" id="47">47</a>
+<a href="#48" id="48">48</a>
+<a href="#49" id="49">49</a>
+<a href="#50" id="50">50</a>
+<a href="#51" id="51">51</a>
+<a href="#52" id="52">52</a>
+<a href="#53" id="53">53</a>
+<a href="#54" id="54">54</a>
+<a href="#55" id="55">55</a>
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a></pre></div><pre class="rust"><code><span class="doccomment">//! 相机系统实现
+
+</span><span class="kw">use </span>bevy::{
+    prelude::<span class="kw-2">*</span>,
+    render::{
+        camera::{
+            ScalingMode,
+        },
+        view::RenderLayers,
+    },
+    ecs::system::ParamSet
+};
+
+<span class="kw">use </span><span class="kw">crate</span>::background;
+<span class="kw">use </span><span class="kw">crate</span>::player;
+
+<span class="attr">#[derive(Component, Reflect)]
+</span><span class="kw">struct </span>InGameCamera;
+
+<span class="kw">const </span>PIXEL_PERFECT_LAYERS: RenderLayers = RenderLayers::layer(<span class="number">0</span>);
+
+<span class="doccomment">/// 初始化相机
+</span><span class="kw">fn </span>setup_camera(<span class="kw-2">mut </span>commands: Commands) {
+    commands.spawn((
+        Camera2d,
+        Camera {
+            order: -<span class="number">1</span>,
+            ..default()
+        },
+        Msaa::Off,
+        InGameCamera,
+        PIXEL_PERFECT_LAYERS,
+        Projection::from(OrthographicProjection {
+            scaling_mode: ScalingMode::FixedVertical {
+                viewport_height: <span class="number">800.0</span>,
+            },
+            scale: <span class="number">0.3</span>,
+            ..OrthographicProjection::default_2d()
+        }),
+        CameraFollow {
+            dead_zone_width: <span class="number">0.0</span>,
+            soft_zone_width: <span class="number">0.8</span>,
+            damping: <span class="number">1.0</span>,
+            look_ahead_time: <span class="number">0.0</span>,
+            screen_offset: Vec2::new(<span class="number">0.0</span>, <span class="number">0.0</span>),
+            axis_constraints: [<span class="bool-val">false</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>],
+            constraint_values: Vec3::ZERO,
+            blend_factor: <span class="number">0.1</span>,
+            previous_target_position: Vec3::ZERO,
+        },
+    ));
+}
+
+<span class="doccomment">/// 相机跟随组件
+</span><span class="attr">#[derive(Component, Reflect)]
+</span><span class="kw">pub struct </span>CameraFollow {
+    <span class="kw">pub </span>dead_zone_width: f32,
+    <span class="kw">pub </span>soft_zone_width: f32,
+    <span class="kw">pub </span>damping: f32,
+    <span class="kw">pub </span>look_ahead_time: f32,
+    <span class="kw">pub </span>screen_offset: Vec2,
+    <span class="kw">pub </span>axis_constraints: [bool; <span class="number">3</span>],
+    <span class="kw">pub </span>constraint_values: Vec3,
+    <span class="kw">pub </span>blend_factor: f32,
+    <span class="kw">pub </span>previous_target_position: Vec3,
+}
+
+<span class="doccomment">/// 世界坐标到屏幕坐标转换
+</span><span class="kw">fn </span>world_to_screen(
+    camera: <span class="kw-2">&amp;</span>Camera,
+    camera_transform: <span class="kw-2">&amp;</span>GlobalTransform,
+    point: Vec3,
+) -&gt; <span class="prelude-ty">Option</span>&lt;Vec2&gt; {
+    <span class="kw">let </span>viewport_size = camera.logical_viewport_size()<span class="question-mark">?</span>;
+    <span class="kw">let </span>projection_matrix = camera.clip_from_view();
+    <span class="kw">let </span>view_matrix = camera_transform.compute_matrix().inverse();
+    
+    <span class="kw">let </span>point_ndc = (projection_matrix * view_matrix).project_point3(point);
+    <span class="kw">if </span>point_ndc.z &lt; <span class="number">0.0 </span>|| point_ndc.z &gt; <span class="number">1.0 </span>{
+        <span class="kw">return </span><span class="prelude-val">None</span>;
+    }
+    
+    <span class="kw">let </span>screen_x = (point_ndc.x + <span class="number">1.0</span>) / <span class="number">2.0 </span>* viewport_size.x;
+    <span class="kw">let </span>screen_y = (<span class="number">1.0 </span>- point_ndc.y) / <span class="number">2.0 </span>* viewport_size.y;
+    <span class="prelude-val">Some</span>(Vec2::new(screen_x, screen_y))
+}
+
+<span class="doccomment">/// 屏幕坐标到世界坐标转换
+</span><span class="kw">fn </span>screen_to_world(
+    camera: <span class="kw-2">&amp;</span>Camera,
+    camera_transform: <span class="kw-2">&amp;</span>GlobalTransform,
+    screen_pos: Vec2,
+    depth: f32,
+) -&gt; <span class="prelude-ty">Option</span>&lt;Vec3&gt; {
+    <span class="kw">let </span>viewport_size = camera.logical_viewport_size()<span class="question-mark">?</span>;
+    <span class="kw">let </span>projection_matrix = camera.clip_from_view();
+    <span class="kw">let </span>inv_view_proj = (projection_matrix * camera_transform.compute_matrix().inverse()).inverse();
+
+    <span class="kw">let </span>ndc_x = (screen_pos.x / viewport_size.x) * <span class="number">2.0 </span>- <span class="number">1.0</span>;
+    <span class="kw">let </span>ndc_y = <span class="number">1.0 </span>- (screen_pos.y / viewport_size.y) * <span class="number">2.0</span>;
+    <span class="kw">let </span>world_pos = inv_view_proj.project_point3(Vec3::new(ndc_x, ndc_y, depth));
+    <span class="prelude-val">Some</span>(world_pos)
+}
+
+<span class="doccomment">/// 计算阻尼
+</span><span class="kw">fn </span>compute_soft_damping(
+    current_pos: Vec3,
+    target_pos: Vec3,
+    delta_time: f32,
+    soft_zone_width: f32,
+    damping: f32,
+) -&gt; Vec3 {
+    <span class="kw">let </span>delta = target_pos - current_pos;
+    <span class="kw">let </span>distance = delta.length();
+    
+    <span class="kw">if </span>distance &lt; soft_zone_width {
+        <span class="kw">let </span>damping_factor = (-damping * delta_time).exp();
+        current_pos + delta * (<span class="number">1.0 </span>- damping_factor)
+    } <span class="kw">else </span>{
+        target_pos
+    }
+}
+
+<span class="doccomment">/// 计算预测位置
+</span><span class="kw">fn </span>compute_predicted_position(current_pos: Vec3, velocity: Vec3, look_ahead_time: f32) -&gt; Vec3 {
+    current_pos + velocity * look_ahead_time
+}
+
+<span class="doccomment">/// 应用轴向约束
+</span><span class="kw">fn </span>apply_axis_constraints(position: Vec3, constraints: [bool; <span class="number">3</span>], constraint_values: Vec3) -&gt; Vec3 {
+    <span class="kw">let </span><span class="kw-2">mut </span>result = position;
+    <span class="kw">if </span>constraints[<span class="number">0</span>] {
+        result.x = constraint_values.x;
+    }
+    <span class="kw">if </span>constraints[<span class="number">1</span>] {
+        result.y = constraint_values.y;
+    }
+    <span class="kw">if </span>constraints[<span class="number">2</span>] {
+        result.z = constraint_values.z;
+    }
+    result
+}
+
+<span class="doccomment">/// 相机跟随系统
+</span><span class="kw">fn </span>camera_follow_system(
+    time: Res&lt;Time&gt;,
+    player_query: Query&lt;<span class="kw-2">&amp;</span>Transform, With&lt;player::Player&gt;&gt;,
+    <span class="kw-2">mut </span>cameras: Query&lt;(<span class="kw-2">&amp;mut </span>Transform, <span class="kw-2">&amp;</span>Camera, <span class="kw-2">&amp;</span>GlobalTransform, <span class="kw-2">&amp;mut </span>CameraFollow), Without&lt;player::Player&gt;&gt;,
+) {
+    <span class="kw">let </span>delta_time = time.delta_secs();
+
+    <span class="kw">for </span>(<span class="kw-2">mut </span>cam_transform, camera, cam_global_transform, <span class="kw-2">mut </span>follow) <span class="kw">in </span>cameras.iter_mut() {
+        <span class="kw">let </span><span class="prelude-val">Ok</span>(target_transform) = player_query.single() <span class="kw">else </span>{
+            <span class="kw">continue</span>;
+        };
+
+        <span class="comment">// 计算目标速度
+        </span><span class="kw">let </span>current_target_pos = target_transform.translation;
+        <span class="kw">let </span>target_velocity = (current_target_pos - follow.previous_target_position) / delta_time;
+        follow.previous_target_position = current_target_pos;
+
+        <span class="comment">// 预测目标位置
+        </span><span class="kw">let </span>predicted_pos = compute_predicted_position(
+            current_target_pos,
+            target_velocity,
+            follow.look_ahead_time,
+        );
+
+        <span class="comment">// 死区检查
+        </span><span class="kw">if </span>(predicted_pos - cam_transform.translation).length() &lt; follow.dead_zone_width {
+            <span class="kw">continue</span>;
+        }
+
+        <span class="comment">// 应用软区阻尼
+        </span><span class="kw">let </span>damped_pos = compute_soft_damping(
+            cam_transform.translation,
+            predicted_pos,
+            delta_time,
+            follow.soft_zone_width,
+            follow.damping,
+        );
+
+        <span class="comment">// 屏幕空间组合
+        </span><span class="kw">let </span>screen_pos = <span class="kw">match </span>world_to_screen(camera, cam_global_transform, damped_pos) {
+            <span class="prelude-val">Some</span>(pos) =&gt; pos,
+            <span class="prelude-val">None </span>=&gt; <span class="kw">continue</span>,
+        };
+
+        <span class="kw">let </span>offset_screen_pos = screen_pos + follow.screen_offset * camera.logical_viewport_size().unwrap();
+        <span class="kw">let </span>world_pos = <span class="kw">match </span>screen_to_world(
+            camera,
+            cam_global_transform,
+            offset_screen_pos,
+            damped_pos.z,
+        ) {
+            <span class="prelude-val">Some</span>(pos) =&gt; pos,
+            <span class="prelude-val">None </span>=&gt; <span class="kw">continue</span>,
+        };
+
+        <span class="comment">// 应用轴向约束
+        </span><span class="kw">let </span>constrained_pos = apply_axis_constraints(
+            world_pos,
+            follow.axis_constraints,
+            follow.constraint_values,
+        );
+
+        <span class="comment">// 混合位置
+        </span>cam_transform.translation = cam_transform.translation.lerp(
+            constrained_pos,
+            follow.blend_factor.clamp(<span class="number">0.0</span>, <span class="number">1.0</span>),
+        );
+    }
+}
+
+<span class="doccomment">/// 应用视差效果
+</span><span class="kw">fn </span>update_parallax_effect(
+    <span class="kw-2">mut </span>param_set: ParamSet&lt;(
+        Query&lt;<span class="kw-2">&amp;</span>Transform, With&lt;player::Player&gt;&gt;,
+        Query&lt;<span class="kw-2">&amp;</span>Transform, With&lt;InGameCamera&gt;&gt;,
+        Query&lt;(<span class="kw-2">&amp;mut </span>Transform, <span class="kw-2">&amp;</span>background::Background), Without&lt;player::Player&gt;&gt;,
+    )&gt;,
+) {
+    <span class="kw">let </span>player_pos = param_set.p0().single().unwrap().translation;
+    <span class="kw">let </span>camera_pos = param_set.p1().single().unwrap().translation;
+
+    <span class="comment">// 处理背景
+    </span><span class="kw">for </span>(<span class="kw-2">mut </span>bg_transform, background) <span class="kw">in </span>param_set.p2().iter_mut() {
+        <span class="kw">let </span>cam_move_since_start = Vec2::new(camera_pos.x, camera_pos.y) - background.starting_position;
+        <span class="kw">let </span>z_distance_from_target = bg_transform.translation.z - player_pos.z;
+        <span class="kw">let </span>clipping_plane = camera_pos.z + <span class="kw">if </span>z_distance_from_target &gt; <span class="number">0.0 </span>{ <span class="number">20.0 </span>} <span class="kw">else </span>{ -<span class="number">20.0 </span>};
+        <span class="kw">let </span>parallax_factor = f32::abs(z_distance_from_target) / clipping_plane;
+        <span class="kw">let </span>new_position = background.starting_position + cam_move_since_start * parallax_factor;
+        bg_transform.translation = Vec3::new(new_position.x, new_position.y, background.starting_z);
+    }
+}
+
+<span class="kw">pub struct </span>CameraPlugin&lt;S: States&gt; {
+    <span class="kw">pub </span>state: S,
+}
+
+<span class="kw">impl</span>&lt;S: States&gt; Plugin <span class="kw">for </span>CameraPlugin&lt;S&gt; {
+    <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, app: <span class="kw-2">&amp;mut </span>App) {
+        app.add_systems(Startup, setup_camera);
+        app.add_systems(Update, update_parallax_effect.run_if(in_state(<span class="self">self</span>.state.clone())));
+        app.add_systems(FixedUpdate, camera_follow_system.run_if(in_state(<span class="self">self</span>.state.clone())));
+    }
+}</code></pre></div></section></main></body></html>

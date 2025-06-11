@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["_trigger_load","_trigger_save","load","save","should_save"],"struct":["LoadRequest","SaveRequest","SavingPlugin","TransformData"]};

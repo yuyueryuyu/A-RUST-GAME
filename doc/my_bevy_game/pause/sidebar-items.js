@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["handle_choice","handle_enter","handle_pause","spawn_box"],"struct":["MenuItem","PausePlugin","UI"]};

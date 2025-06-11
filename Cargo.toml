@@ -3,8 +3,8 @@ name = "my_bevy_game"
 version = "0.1.0"
 edition = "2024"
 
-[lib]
-proc-macro = true
+[profile.release]
+[target.'cfg(windows)'.dependencies]
 
 [dependencies]
 bevy = { version = "0.16.1" , features = ["serialize"] }
@@ -22,9 +22,7 @@ bevy_kira_audio = { version = "0.23.0", features = [ "mp3", "wav" ]}
 moonshine-save = "0.4.3"
 serde = "1.0.219"
 rand = "0.9.1"
-proc-macro2 = "1.0.95"
-quote = "1.0.40"
-syn = { version = "2.0", features = ["full"] }
+game_derive = { path = "./game_derive" }
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
 opt-level = 1

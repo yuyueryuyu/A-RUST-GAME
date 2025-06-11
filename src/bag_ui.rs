@@ -1,5 +1,4 @@
-use bevy::{ecs::system::command, prelude::*, render::view::visibility};
-use std::{collections::HashMap, process::Child, thread::current};
+use bevy::prelude::*;
 
 use crate::{items::{ActiveItems, ItemBag, ItemList, ItemType}, player::Player, PausedState};
 
@@ -36,13 +35,12 @@ pub struct ItemInfoNum;
 
 #[derive(Component)]
 pub struct ItemGridPanel{
-    pub current: usize, 
-    pub page: usize,
+    pub current: usize,
     pub max: Option<usize>,
 }
 
 #[derive(Component)]
-pub struct ItemPage(pub usize);
+pub struct ItemPage;
 
 #[derive(Component)]
 pub struct ItemSlot;
@@ -254,7 +252,6 @@ fn spawn_inventory_ui(
         BackgroundColor(panel_color),
         ItemGridPanel {
             current: 0,
-            page: 0,
             max: if bag.slots.len() == 0 { None } else { Some(bag.slots.len()-1) },
         },
     )).id();
@@ -268,7 +265,7 @@ fn spawn_inventory_ui(
             flex_direction: FlexDirection::Column,
             ..default()
         },
-        ItemPage(0),
+        ItemPage,
         Visibility::Visible,
         ChildOf(grid_panel_entity),
     )).id();
@@ -286,7 +283,7 @@ fn spawn_inventory_ui(
                     flex_direction: FlexDirection::Column,
                     ..default()
                 },
-                ItemPage(i / (GRID_HEIGHT * GRID_WIDTH)),
+                ItemPage,
                 Visibility::Hidden,
                 ChildOf(grid_panel_entity),
             )).id();
@@ -473,7 +470,6 @@ fn handle_inventory_input(
             } else {
                 acts.items.push(key.clone());
             }
-            
         }
     }
     if keyboard_input.just_pressed(KeyCode::Escape) {

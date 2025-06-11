@@ -3,6 +3,7 @@ use avian2d::prelude::*;
 
 use crate::game_layer::GameLayer;
 
+/// 物理组件包
 #[derive(Bundle)]
 pub struct PhysicsBundle {
     pub rigidbody: RigidBody,

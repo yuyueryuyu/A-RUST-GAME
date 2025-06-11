@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["CLOSE_MAX_DISTANCE","FAR_MAX_DISTANCE","FLOAT_HEIGHT","MID_FAR_MAX_DISTANCE","MID_MAX_DISTANCE","NOTICED_SPEED","WALK_SPEED"],"fn":["attack_action_system","get_speed","move_to_player_action_system","notice_scorer_system","notice_system"],"struct":["Attack","FireDemonBehaviourPlugin","MoveToPlayer","Notice","NoticeScorer"]};

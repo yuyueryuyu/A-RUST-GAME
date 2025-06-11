@@ -1,9 +1,10 @@
+//! 火焰恶魔boss
+
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use bevy_kira_audio::{Audio, AudioInstance};
 use big_brain::prelude::*;
-use my_bevy_game::{enter, exit};
-use std::collections::HashSet;
+use game_derive::enter;
+use game_derive::exit;
 
 use crate::animator::Condition;
 use crate::animator::*;
@@ -45,7 +46,7 @@ fn setup_enemy(
             ..default()
         },
         Collider::rectangle(20.0, 20.0),
-        Transform::from_xyz(1480.0, 124.1, 0.0),
+        Transform::from_xyz(1480.0, 54.1, 0.0),
         ItemHint,
         NotpickedItems { id: "HealthPotion".to_string(), num: 5 },
         Sensor,
@@ -494,11 +495,12 @@ fn on_boom_exit(
 
 #[enter("stun")]
 fn on_stun_enter(
-    mut player: Query<&mut Animator, With<FireDemon>>,
+    mut player: Query<(&mut Animator, &mut LinearVelocity), With<FireDemon>>,
 ) {
     let entity = trigger.entity;
-    let mut animator = player.get_mut(entity).unwrap();
+    let (mut animator, mut vel) = player.get_mut(entity).unwrap();
     animator.set_bool("can_move", false);
+    vel.x = 0.;
 }
 
 #[exit("stun")]

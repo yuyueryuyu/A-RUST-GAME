@@ -1,55 +1,51 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use bevy::render::render_resource::encase::private::Length;
-use bevy_inspector_egui::egui_utils::easymark::parser::Item;
 use bevy_kira_audio::Audio;
 use bevy_kira_audio::AudioControl;
-use bevy_kira_audio::AudioInstance;
-use bevy_kira_audio::AudioTween;
+use bevy_tnua::builtins::TnuaBuiltinDash;
 use bevy_tnua::prelude::*;
 use moonshine_save::save::Save;
-use my_bevy_game::enter;
-use my_bevy_game::exit;
+use game_derive::enter;
+use game_derive::exit;
 use std::collections::HashMap;
-use std::collections::HashSet;
-use std::process::CommandArgs;
 
 use crate::animator::Condition;
 use crate::animator::*;
 use crate::damagable::*;
 use crate::game_layer::GameLayer;
-use crate::healthbar::ItemImg;
-use crate::hint::ItemHint;
 use crate::input;
 use crate::input::*;
 use crate::controller::*;
-use crate::items::item_canpick_observer;
-use crate::items::item_cantpick_observer;
 use crate::items::ActiveItems;
 use crate::items::HasItem;
 use crate::items::ItemBag;
 use crate::items::ItemList;
 use crate::items::ItemOf;
-use crate::items::ItemType;
-use crate::items::NotpickedItems;
 use crate::items::UseItemTrigger;
 use crate::physics::*;
 use crate::save::TransformData;
 
+/// 玩家标识组件
 #[derive(Component, Reflect)]
 #[require(Save)]
 pub struct Player;
 
+/// 初始化玩家
 fn setup_player(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     transform_data: ResMut<TransformData>,
 ) {
+    // 初始化素材
     let texture = asset_server.load("Art/Adventurer/adventurer-sheet.png");
     let layout = TextureAtlasLayout::from_grid(UVec2::new(50, 37), 20, 10, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
+    // 初始化动画状态机
     let animator = setup_animator(transform_data.params.clone());
+    
+    // 初始化碰撞体逻辑
     let collider_layer = CollisionLayers::new(
         GameLayer::Player,
         [
@@ -59,8 +55,12 @@ fn setup_player(
             GameLayer::Sensor,
         ],
     );
+    
+    // 初始化位置
     let translation = Vec3::new(transform_data.translation[0], transform_data.translation[1], transform_data.translation[2]);
     let scale = Vec3::new(transform_data.scale[0], transform_data.scale[1], transform_data.scale[2]);
+    
+    // 生成玩家
     commands.spawn((
         Player,
         Save,
@@ -88,6 +88,7 @@ fn setup_player(
     ));
 }
 
+/// 动画状态类型 
 #[derive(Reflect)]
 enum AnimationType {
     AirAttack1,
@@ -141,6 +142,7 @@ enum AnimationType {
 }
 
 impl AnimationType {
+    /// 每种动画状态对应的动画帧起始、末尾
     fn config_index(&self) -> (usize, usize) {
         match self {
             Self::AirAttack3End => (0, 2),
@@ -195,7 +197,9 @@ impl AnimationType {
     }
 }
 
+/// 初始化动画状态机
 fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
+    // 空闲状态
     let idle_state = AnimationState {
         name: "Idle".to_string(),
         first_index: AnimationType::Idle.config_index().0,
@@ -874,22 +878,24 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
         name: "Jump".to_string(),
         first_index: AnimationType::Jump.config_index().0,
         last_index: AnimationType::Jump.config_index().1,
-        transitions: vec![Transition {
-            conditions: vec![],
-            target_state: "Rise".to_string(),
-            has_exit_time: true,
-            exit_time: 1.0,
-        },
-        Transition {
-            conditions: vec![Condition {
-                param_name: "defense".to_string(),
-                operator: ConditionOperator::Equals,
-                value: AnimatorParam::Trigger(true),
-            }],
-            target_state: "Defense".to_string(),
-            has_exit_time: false,
-            exit_time: 0.0,
-        },],
+        transitions: vec![
+            Transition {
+                conditions: vec![],
+                target_state: "Rise".to_string(),
+                has_exit_time: true,
+                exit_time: 1.0,
+            },
+            Transition {
+                conditions: vec![Condition {
+                    param_name: "defense".to_string(),
+                    operator: ConditionOperator::Equals,
+                    value: AnimatorParam::Trigger(true),
+                }],
+                target_state: "Defense".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
+        ],
         on_enter: Some(__jump_enter_handler),
         loop_animation: false,
         ..default()
@@ -1175,6 +1181,23 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
                 exit_time: 0.0,
             },
             Transition {
+                conditions: vec![
+                    Condition {
+                        param_name: "can_wall_jump".to_string(),
+                        operator: ConditionOperator::Equals,
+                        value: AnimatorParam::Bool(true),
+                    },
+                    Condition {
+                        param_name: "jump".to_string(),
+                        operator: ConditionOperator::Equals,
+                        value: AnimatorParam::Trigger(true),
+                    }
+                ],
+                target_state: "Jump".to_string(),
+                has_exit_time: false,
+                exit_time: 0.0,
+            },
+            Transition {
                 conditions: vec![Condition {
                     param_name: "hit".to_string(),
                     operator: ConditionOperator::Equals,
@@ -1199,6 +1222,7 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
         ..default()
     };
 
+    // 初始化动画状态机参数
     let mut animator = Animator::new().with_params(params.clone());
     if params.is_empty() {
         animator.add_parameter("is_moving", AnimatorParam::Bool(false));
@@ -1246,6 +1270,8 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
     animator.add_state(defense_state);
     animator.add_state(items_state);
     animator.add_state(wall_slide_state);
+    
+    // 初始状态为倒下
     animator.set_initial_state(
         "Lie",
         AnimationType::Lie.config_index().0,
@@ -1256,16 +1282,18 @@ fn setup_animator(params: HashMap<String, AnimatorParam>) -> Animator {
     animator
 }
 
+/// 进入攻击状态触发
 #[enter("attack")]
 fn on_attack_enter(
     mut commands: Commands
 ) {
     let entity = trigger.entity;
+    // 生成hitbox
     commands.spawn((
             Collider::rectangle(30., 10.),
             Transform::from_xyz(10., 0., 0.),
             Sensor,
-            HitBox { damage: 1000. },
+            HitBox { damage: 200. },
             CollisionLayers::new(GameLayer::PlayerHitBox, [GameLayer::Enemy]),
             CollisionEventsEnabled,
             ChildOf(entity),
@@ -1273,6 +1301,7 @@ fn on_attack_enter(
         )).observe(check_hitbox);
 }
 
+/// 退出攻击状态
 #[exit("attack")]
 fn on_attack_exit(
     mut commands: Commands,
@@ -1281,11 +1310,13 @@ fn on_attack_exit(
     let entity = trigger.entity;
     let hitboxes = player.get(entity).unwrap();
     let vec = (**hitboxes).clone();
+    // 删除hitbox
     for hitbox in vec {
         commands.entity(hitbox).despawn();
     }
 }
 
+/// 进入硬直状态
 #[enter("stun")]
 fn on_stun_enter(
     mut player: Query<&mut Animator, With<Player>>,
@@ -1295,6 +1326,7 @@ fn on_stun_enter(
     animator.set_bool("can_move", false);
 }
 
+/// 退出硬直状态
 #[exit("stun")]
 fn on_stun_exit(
     mut player: Query<&mut Animator, With<Player>>,
@@ -1304,6 +1336,7 @@ fn on_stun_exit(
     animator.set_bool("can_move", true);
 }
 
+/// 进入使用物品状态
 #[enter("item")]
 fn on_item_enter(
     mut commands: Commands,
@@ -1312,10 +1345,13 @@ fn on_item_enter(
 ) {
     let entity = trigger.entity;
     let items = player.get(entity).unwrap();
+    // 若无物品可以使用，则返回
     if items.items.is_empty() { return; }
     let item_name = items.get_current_item();
     let item_info = item_list.infos.get(&item_name).unwrap();
+    // 使用物品
     commands.trigger(UseItemTrigger { user: entity, item: items.get_current_item().clone() });
+    // 生成物品实体
     commands.spawn((
         Sprite {
             image: item_info.icon.clone(),
@@ -1327,6 +1363,7 @@ fn on_item_enter(
     ));
 } 
 
+/// 退出使用物品状态
 #[exit("item")]
 fn on_item_exit(
     mut commands: Commands,
@@ -1341,30 +1378,70 @@ fn on_item_exit(
     }
 } 
 
+/// 跳跃常数
+const SLIDE_SPEED: f32 = 400.0;
+const SLIDE_ACC: f32 = 400.0;
+const JUMP_IMPULSE: f32 = 600.0;
+
+/// 进入跳跃状态
 #[enter("jump")]
-fn on_jump_enter(asset_server: Res<AssetServer>, audio: Res<Audio>) {
+fn on_jump_enter(
+    mut player: Query<(&Animator, &mut TnuaController), With<Player>>,
+    asset_server: Res<AssetServer>, 
+    audio: Res<Audio>
+) {
+    let entity = trigger.entity;
     audio.play(asset_server.load(
         "Audio/SFX/12_Player_Movement_SFX/30_Jump_03.wav"));
+    let (animator, mut controller) = player.get_mut(entity).unwrap();
+    controller.action(TnuaBuiltinJump {
+        height: JUMP_IMPULSE,
+        allow_in_air: animator.get_bool("is_on_wall") && animator.get_bool("can_wall_jump"),
+        ..Default::default()
+    });
 }
 
+/// 退出跳跃状态
 #[exit("fall")]
 fn on_fall_exit(asset_server: Res<AssetServer>, audio: Res<Audio>) {
     audio.play(asset_server.load(
         "Audio/SFX/12_Player_Movement_SFX/45_Landing_01.wav"));
 }
 
+/// 进入滑行状态
 #[enter("slide")]
-fn on_slide_enter() {
-
+fn on_slide_enter(
+    mut player: Query<(&Animator, &mut TnuaController), With<Player>>,
+    asset_server: Res<AssetServer>, 
+    audio: Res<Audio>
+) {
+    let entity = trigger.entity;
+    audio.play(asset_server.load(
+        "Audio/SFX/10_Battle_SFX/51_Flee_02.wav"));
+    let (animator, mut controller) = player.get_mut(entity).unwrap();
+    let facing_direction = if animator.get_bool("is_facing_right") {
+        1.
+    } else {
+        -1.
+    };
+    controller.action(TnuaBuiltinDash {
+        displacement: Vec3::new(70., 0., 0.)* facing_direction ,
+        speed: SLIDE_SPEED * 2.,
+        acceleration: SLIDE_ACC * 2.,
+        brake_acceleration: SLIDE_ACC * 2.,
+        ..Default::default()
+    });
 }
 
+/// 退出滑行状态
 #[exit("slide")]
 fn on_slide_exit() {
-
+    /* doing nothing */
 }
 
+/// 碰撞检查，检查是否触地、触墙
 fn check_contact(
-    mut player: Single<(&mut Animator, &Transform, &Collider), With<Player>>,
+    player: Single<(&mut Animator, &Transform, &Collider), With<Player>>,
     controller: Single<&TnuaController, With<Player>>,
     spatial_query: SpatialQuery,
 ) {

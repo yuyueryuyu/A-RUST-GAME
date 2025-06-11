@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["play_audio","setup_bg"],"struct":["Background","BackgroundPlugin"]};

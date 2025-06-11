@@ -1,32 +1,31 @@
+//! 动画状态机实现
+
 use bevy::prelude::*;
-use bevy_kira_audio::{Audio, AudioControl, AudioInstance};
+use bevy_kira_audio::{Audio, AudioControl};
 use serde::{Deserialize, Serialize};
 use std::collections::{
     HashMap, HashSet
 };
 use std::time::Duration;
 
-// 动画参数类型
+/// 动画参数类型
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AnimatorParam {
     Bool(bool),
-    Int(i32),
     Float(f32),
     Trigger(bool),
 }
 
-// 条件比较操作符
+/// 条件比较操作符
 #[derive(Debug, Clone, Copy)]
 pub enum ConditionOperator {
     Equals,
-    NotEquals,
     Greater,
     Less,
-    GreaterOrEqual,
     LessOrEqual,
 }
 
-// 转换条件
+/// 转换条件
 #[derive(Debug, Clone)]
 pub struct Condition {
     pub param_name: String,
@@ -34,17 +33,7 @@ pub struct Condition {
     pub value: AnimatorParam,
 }
 
-impl Condition {
-    pub fn new(param: String, op: ConditionOperator, value: AnimatorParam) -> Self {
-        Self {
-            param_name: param,
-            operator: op,
-            value: value,
-        }
-    }
-}
-
-// 状态转换
+/// 状态转换
 #[derive(Debug, Clone)]
 pub struct Transition {
     pub conditions: Vec<Condition>,
@@ -53,7 +42,7 @@ pub struct Transition {
     pub exit_time: f32, // 0.0 - 1.0 范围的归一化时间
 }
 
-// 动画状态
+/// 动画状态
 #[derive(Debug, Clone)]
 pub struct AnimationState {
     pub name: String,
@@ -61,8 +50,10 @@ pub struct AnimationState {
     pub last_index: usize,
     pub transitions: Vec<Transition>,
     pub loop_animation: bool,
-    pub on_enter: Option<fn(&mut Commands, Entity)>, // 进入状态时的回调
-    pub on_exit: Option<fn(&mut Commands, Entity)>,  // 退出状态时的回调
+    /// 进入状态时的回调
+    pub on_enter: Option<fn(&mut Commands, Entity)>,
+    /// 退出状态时的回调
+    pub on_exit: Option<fn(&mut Commands, Entity)>,  
     pub audio_path: Option<String>,
 }
 
@@ -81,7 +72,7 @@ impl Default for AnimationState {
     }
 }
 
-// Animator组件
+/// Animator组件
 #[derive(Component, Debug)]
 pub struct Animator {
     states: HashMap<String, AnimationState>,
@@ -93,8 +84,10 @@ pub struct Animator {
     fps: u8,
     frame_timer: Timer,
     pub normalized_time: f32,
-    active_triggers: HashSet<String>, // 当前激活的trigger集合
-    consumed_triggers: HashSet<String>, // 已消费的trigger集合
+    /// 当前激活的trigger集合
+    active_triggers: HashSet<String>, 
+    /// 已消费的trigger集合
+    consumed_triggers: HashSet<String>, 
 }
 
 impl Animator {
@@ -119,11 +112,12 @@ impl Animator {
         self
     }
 
+    /// 检查是否在状态中
     pub fn in_state(&self, state: String) -> bool {
         self.current_state == state
     }
 
-    // 添加状态
+    /// 添加状态
     pub fn add_state(&mut self, state: AnimationState) {
         let name = state.name.clone();
         // 如果这是第一个状态，设为当前状态
@@ -133,11 +127,7 @@ impl Animator {
         self.states.insert(name, state);
     }
 
-    pub fn get_state(&self, state_name: &str) -> &AnimationState {
-        self.states.get(state_name).expect("don't have this state")
-    }
-
-    // 设置初始状态
+    /// 设置初始状态
     pub fn set_initial_state(&mut self, state_name: &str, first_index: usize, last_index: usize, fps: u8) {
         if self.states.contains_key(state_name) {
             self.current_state = state_name.to_string();
@@ -148,12 +138,12 @@ impl Animator {
         }
     }
 
-    // 添加参数
+    /// 添加参数
     pub fn add_parameter(&mut self, name: &str, param: AnimatorParam) {
         self.parameters.insert(name.to_string(), param);
     }
 
-    // 设置Bool参数
+    /// 设置Bool参数
     pub fn set_bool(&mut self, name: &str, value: bool) {
         if let Some(param) = self.parameters.get_mut(name) {
             if let AnimatorParam::Bool(_) = param {
@@ -162,6 +152,7 @@ impl Animator {
         }
     }
 
+    /// 获取Bool参数
     pub fn get_bool(&self, name: &str) -> bool {
         if let Some(param) = self.parameters.get(name) {
             if let AnimatorParam::Bool(bool_val) = param {
@@ -171,25 +162,7 @@ impl Animator {
         false
     }
 
-    // 设置Int参数
-    pub fn set_int(&mut self, name: &str, value: i32) {
-        if let Some(param) = self.parameters.get_mut(name) {
-            if let AnimatorParam::Int(_) = param {
-                *param = AnimatorParam::Int(value);
-            }
-        }
-    }
-
-    pub fn get_int(&self, name: &str) -> i32{
-        if let Some(param) = self.parameters.get(name) {
-            if let AnimatorParam::Int(int_val) = param {
-                return *int_val;
-            }
-        }
-        0
-    }
-
-    // 设置Float参数
+    /// 设置Float参数
     pub fn set_float(&mut self, name: &str, value: f32) {
         if let Some(param) = self.parameters.get_mut(name) {
             if let AnimatorParam::Float(_) = param {
@@ -198,6 +171,7 @@ impl Animator {
         }
     }
 
+    /// 获取Float参数
     pub fn get_float(&self, name: &str) -> f32{
         if let Some(param) = self.parameters.get(name) {
             if let AnimatorParam::Float(float_val) = param {
@@ -207,7 +181,7 @@ impl Animator {
         0.0
     }
 
-    // 设置Trigger参数
+    /// 设置Trigger参数
     pub fn set_trigger(&mut self, name: &str) {
         if let Some(param) = self.parameters.get_mut(name) {
             if let AnimatorParam::Trigger(_) = param {
@@ -217,6 +191,7 @@ impl Animator {
         }
     }
 
+    /// 检查trigger是否有效
     pub fn is_active(&self, name: &str) -> bool {
         self.active_triggers.contains(name)
     }
@@ -238,27 +213,14 @@ impl Animator {
                 (AnimatorParam::Bool(current), AnimatorParam::Bool(target)) => {
                     match condition.operator {
                         ConditionOperator::Equals => *current == *target,
-                        ConditionOperator::NotEquals => *current != *target,
-                        _ => false, // Bool只支持相等和不相等
-                    }
-                }
-                (AnimatorParam::Int(current), AnimatorParam::Int(target)) => {
-                    match condition.operator {
-                        ConditionOperator::Equals => *current == *target,
-                        ConditionOperator::NotEquals => *current != *target,
-                        ConditionOperator::Greater => *current > *target,
-                        ConditionOperator::Less => *current < *target,
-                        ConditionOperator::GreaterOrEqual => *current >= *target,
-                        ConditionOperator::LessOrEqual => *current <= *target,
+                        _ => false, 
                     }
                 }
                 (AnimatorParam::Float(current), AnimatorParam::Float(target)) => {
                     match condition.operator {
                         ConditionOperator::Equals => (*current - *target).abs() < f32::EPSILON,
-                        ConditionOperator::NotEquals => (*current - *target).abs() >= f32::EPSILON,
                         ConditionOperator::Greater => *current > *target,
                         ConditionOperator::Less => *current < *target,
-                        ConditionOperator::GreaterOrEqual => *current >= *target,
                         ConditionOperator::LessOrEqual => *current <= *target,
                     }
                 }
@@ -343,15 +305,14 @@ impl Animator {
                 if state.loop_animation {
                     self.normalized_time %= 1.0; 
                 }
-
+                // 如果是最后一帧，更新为第一帧
                 if atlas.index == self.last_index {
-                    // ...and it IS the last frame, then we move back to the first frame and stop.
                     if self.normalized_time < 1.0 {
                         atlas.index = self.first_index;
                         result = true;
                     }
                 } else {
-                    // ...and it is NOT the last frame, then we move to the next frame...
+                    // 否则更新为下一帧
                     atlas.index += 1;
                 }
             }
@@ -399,6 +360,7 @@ impl Animator {
     
 }
 
+/// 动画状态机更新系统
 fn update_animators(
     mut commands: Commands,
     time: Res<Time>,
@@ -422,7 +384,6 @@ fn update_animators(
 }
 
 
-// 将系统添加到Bevy的App
 pub struct AnimatorPlugin<S: States> {
     pub state: S,
 }

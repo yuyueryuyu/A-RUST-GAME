@@ -1,22 +1,23 @@
-use bevy::prelude::*;
-use moonshine_save::load;
+//! 生成获取能力UI
 
-use crate::animator::Animator;
-use crate::damagable::Damagable;
+use bevy::prelude::*;
+
 use crate::items::{ItemList, NearingItem, NotpickedItems};
 use crate::player::Player;
-use crate::{AppState, PausedState};
-use crate::save::load;
-use crate::save::{trigger_save, LoadRequest, SaveRequest};
+use crate::PausedState;
+
+/// 菜单项
 #[derive(Component)]
 pub struct MenuItem {
     pub id: i32,
     pub is_selected: bool,
 }
 
+/// UI
 #[derive(Component)]
 pub struct UI;
 
+/// 生成UI
 fn spawn_box(
     mut commands: Commands, 
     player: Single<&NearingItem, With<Player>>,
@@ -137,6 +138,7 @@ fn spawn_box(
     commands.entity(*item).despawn();
 }
 
+/// 处理输入
 fn handle_enter(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     items: Query<&MenuItem>,

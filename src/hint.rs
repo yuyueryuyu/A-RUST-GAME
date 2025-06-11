@@ -1,26 +1,31 @@
+//! 生成游戏提示
+
 use bevy::prelude::*;
 use avian2d::prelude::*;
 
 use crate::{game_layer::GameLayer, healthbar::Hint, player::Player};
-
+/// 上下左右提示
 #[derive(Component)]
 pub struct WASDHint;
-
+/// 战斗提示
 #[derive(Component)]
 pub struct BattleHint;
-
+/// 滑行提示
 #[derive(Component)]
 pub struct SlideHint;
-
+/// 跳跃提示
 #[derive(Component)]
 pub struct JumpHint;
-
+/// 使用物品提示
 #[derive(Component)]
 pub struct UseHint;
-
+/// 拾取物品提示
 #[derive(Component)]
 pub struct ItemHint;
-
+/// 提示标识组件
+#[derive(Component)]
+pub struct HintEntity;
+/// 生成提示Sensor
 fn spawn_hint_colliders(
     mut commands: Commands
 ) {
@@ -31,6 +36,7 @@ fn spawn_hint_colliders(
         Transform::from_xyz(125.0, 45.1, 0.),
         CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player]),
         CollisionEventsEnabled,
+        HintEntity
     ));
 
     commands.spawn((
@@ -40,6 +46,7 @@ fn spawn_hint_colliders(
         Transform::from_xyz(185.0, 45.1, 0.),
         CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player]),
         CollisionEventsEnabled,
+        HintEntity
     ));
 
     commands.spawn((
@@ -49,6 +56,7 @@ fn spawn_hint_colliders(
         Transform::from_xyz(545.0, 45.1, 0.),
         CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player]),
         CollisionEventsEnabled,
+        HintEntity
     ));
 
     commands.spawn((
@@ -58,6 +66,7 @@ fn spawn_hint_colliders(
         Transform::from_xyz(171.0, 428.0, 0.),
         CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player]),
         CollisionEventsEnabled,
+        HintEntity
     ));
 
     commands.spawn((
@@ -67,9 +76,11 @@ fn spawn_hint_colliders(
         Transform::from_xyz(898.0, 45.0, 0.),
         CollisionLayers::new(GameLayer::Sensor, [GameLayer::Player]),
         CollisionEventsEnabled,
+        HintEntity
     ));
 }
 
+/// 玩家进入Sensor-> 设置提示
 fn print_started_collisions(
     mut collision_event_reader: EventReader<CollisionStarted>,
     player: Query<&Player>, hint: Query<&WASDHint>, bhint: Query<&BattleHint>,
@@ -108,6 +119,7 @@ fn print_started_collisions(
     }
 }
 
+/// 玩家退出Sensor-> 关闭提示
 fn print_ended_collisions(
     mut collision_event_reader: EventReader<CollisionEnded>,
     player: Query<&Player>, hint: Query<&WASDHint>, bhint: Query<&BattleHint>,

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["castle_skeleton","fire_demon","flying_eye","martial","skeleton"],"struct":["EnemyPlugin"]};

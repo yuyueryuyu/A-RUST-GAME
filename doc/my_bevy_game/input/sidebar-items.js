@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["CROUCH_SPEED","MOVE_ACC","RUN_SPEED","WALK_SPEED"],"enum":["Action"],"fn":["get_speed","on_attack","on_change_item","on_crouch","on_defense","on_jump","on_move","on_pick","on_reverse","on_run","on_slide","on_use"],"struct":["PlayerInputBundle","PlayerInputPlugin"]};

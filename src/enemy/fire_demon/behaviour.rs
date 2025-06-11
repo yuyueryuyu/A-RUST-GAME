@@ -8,7 +8,6 @@ use bevy_tnua::math::*;
 use bevy_tnua::prelude::*;
 use big_brain::prelude::*;
 use rand::Rng;
-use bevy::ecs::{system::Commands, entity::Entity};
 
 const WALK_SPEED: f32 = 20.0;
 const NOTICED_SPEED: f32 = 40.0;
@@ -76,7 +75,7 @@ pub fn move_to_player_action_system(
         (
             &Transform,
             &mut TnuaController,
-            &mut LinearVelocity,
+            &LinearVelocity,
             &mut Animator,
             &Notice,
         ),
@@ -86,7 +85,7 @@ pub fn move_to_player_action_system(
 ) {
     for (Actor(actor), mut action_state, _move_to, span) in &mut action_query {
         let _guard = span.span().enter();
-        let (actor_pos, mut controller, mut vel, mut animator, notice) =
+        let (actor_pos, mut controller, vel, mut animator, notice) =
             actor_query.get_mut(*actor).expect("actor has no position");
         match *action_state {
             ActionState::Requested => {

@@ -1,3 +1,4 @@
+//! 武师boss行为树
 use crate::animator::*;
 use crate::damagable::Damagable;
 use crate::enemy::martial::Martial;
@@ -10,12 +11,10 @@ use bevy_tnua::math::*;
 use bevy_tnua::prelude::*;
 use big_brain::prelude::*;
 use rand::Rng;
-use bevy::ecs::{system::Commands, entity::Entity};
 
 const WALK_SPEED: f32 = 25.0;
 const NOTICED_SPEED: f32 = 50.0;
 const FLOAT_HEIGHT: f32 = 26.;
-const CEILING_HEIGHT: f32 = -26.; // 反向重力时的"浮动"高度
 
 fn get_speed(animator: &Animator, notice: &Notice) -> f32 {
     if animator.get_bool("can_move") {
@@ -112,10 +111,10 @@ pub fn health_system(
 
 pub fn phase_two_timer_system(
     time: Res<Time>,
-    mut query: Query<(&mut PhaseTwoTimer, &mut Animator, &HealthState), With<Martial>>,
+    mut query: Query<(&mut PhaseTwoTimer, &HealthState), With<Martial>>,
     player_pos: Single<&Transform, With<Player>>,
 ) {
-    for (mut timer, mut animator, health_state) in &mut query {
+    for (mut timer, health_state) in &mut query {
         if health_state.is_phase_two && timer.is_on_ceiling {
             timer.teleport_timer.tick(time.delta());
             
@@ -141,7 +140,7 @@ pub fn move_to_player_action_system(
         (
             &Transform,
             &mut TnuaController,
-            &mut LinearVelocity,
+            &LinearVelocity,
             &mut Animator,
             &Notice,
             &HealthState,
@@ -152,7 +151,7 @@ pub fn move_to_player_action_system(
 ) {
     for (Actor(actor), mut action_state, _move_to, span) in &mut action_query {
         let _guard = span.span().enter();
-        let (actor_pos, mut controller, mut vel, mut animator, notice, health_state) =
+        let (actor_pos, mut controller, vel, mut animator, notice, health_state) =
             actor_query.get_mut(*actor).expect("actor has no position");
         match *action_state {
             ActionState::Requested => {
@@ -251,14 +250,14 @@ pub fn move_to_player_action_system(
 pub struct Attack1;
 
 pub fn attack1_action_system(
-    mut enemy_query: Query<(&Transform, &mut Animator, &mut TnuaController, &HealthState), Without<Player>>,
+    mut enemy_query: Query<(&Transform, &mut Animator, &HealthState), Without<Player>>,
     player_pos: Single<&Transform, With<Player>>,
     mut query: Query<(&Actor, &mut ActionState, &Attack1, &ActionSpan)>,
 ) {
     for (Actor(actor), mut state, _attack, span) in &mut query {
         let _guard = span.span().enter();
 
-        let (actor_pos, mut animator, mut controller, health_state) = enemy_query
+        let (actor_pos, mut animator, health_state) = enemy_query
             .get_mut(*actor)
             .expect("actor didn't have components");
 
@@ -293,14 +292,14 @@ pub fn attack1_action_system(
 pub struct Attack2;
 
 pub fn attack2_action_system(
-    mut enemy_query: Query<(&Transform, &mut Animator, &mut TnuaController, &HealthState), Without<Player>>,
+    mut enemy_query: Query<(&Transform, &mut Animator, &HealthState), Without<Player>>,
     player_pos: Single<&Transform, With<Player>>,
     mut query: Query<(&Actor, &mut ActionState, &Attack2, &ActionSpan)>,
 ) {
     for (Actor(actor), mut state, _attack, span) in &mut query {
         let _guard = span.span().enter();
 
-        let (actor_pos, mut animator, mut controller, health_state) = enemy_query
+        let (actor_pos, mut animator, health_state) = enemy_query
             .get_mut(*actor)
             .expect("actor didn't have components");
 
@@ -415,7 +414,7 @@ pub fn phase_transition_action_system(
     for (Actor(actor), mut state, _transition, span) in &mut query {
         let _guard = span.span().enter();
 
-        let (actor_pos, mut animator, mut controller, mut timer, mut gravity) = enemy_query
+        let (_actor_pos, mut animator, mut controller, mut timer, mut gravity) = enemy_query
             .get_mut(*actor)
             .expect("actor didn't have components");
 

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["handle_enter","spawn_box"],"struct":["GetItemPlugin","MenuItem","UI"]};

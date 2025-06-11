@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["PIXEL_PERFECT_LAYERS"],"fn":["apply_axis_constraints","camera_follow_system","compute_predicted_position","compute_soft_damping","screen_to_world","setup_camera","update_parallax_effect","world_to_screen"],"struct":["CameraFollow","CameraPlugin","InGameCamera"]};

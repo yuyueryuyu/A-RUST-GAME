@@ -1,9 +1,10 @@
+//! 武师boss
+
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use bevy_kira_audio::{Audio, AudioInstance};
 use big_brain::prelude::*;
-use my_bevy_game::{enter, exit};
-use std::collections::HashSet;
+use game_derive::enter;
+use game_derive::exit;
 
 use crate::animator::Condition;
 use crate::animator::*;
@@ -11,16 +12,19 @@ use crate::blocks::MartialBlocks;
 use crate::controller::ControllerBundle;
 use crate::damagable::{check_hitbox, Damagable, HasHitbox, HitBox, HitboxOf};
 use crate::game_layer::GameLayer;
-use crate::hint::ItemHint;
+use crate::healthbar::Hint;
+use crate::hint::{HintEntity, ItemHint};
 use crate::items::{item_canpick_observer, item_cantpick_observer, ItemList, NotpickedItems};
 use crate::physics::PhysicsBundle;
-use crate::player::Player;
+
 mod behaviour;
 use behaviour::*;
 
+/// 标识组件
 #[derive(Component, Reflect)]
 struct Martial;
 
+/// 生成敌人
 fn setup_enemy(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -39,6 +43,7 @@ fn setup_enemy(
     );
 }
 
+/// 生成敌人
 fn spawn_enemy(
     commands: &mut Commands,
     position: Vec2,
@@ -61,10 +66,6 @@ fn spawn_enemy(
         .step(MoveToPlayer)
         .step(Attack1)
         .step(Attack2);
-
-    let phase1_jump_attack = Steps::build()
-        .label("Phase1JumpAttack")
-        .step(JumpAttack);
 
     // 第二阶段行为树
     let phase2_transition = Steps::build()
@@ -104,7 +105,7 @@ fn spawn_enemy(
             layer: collider_layer,
             ..default()
         },
-        Damagable::new(1500.), // 较高血量
+        Damagable::new(1500.), 
         animator,
         Notice::new(0.0, 60.0, 0.0),
         HealthState::new(1500.0),
@@ -113,6 +114,7 @@ fn spawn_enemy(
     ));
 }
 
+/// 动画类型
 #[derive(Component, Reflect)]
 enum AnimationType {
     Attack1Prep,
@@ -148,6 +150,7 @@ impl AnimationType {
     }
 }
 
+/// 初始化状态机
 fn setup_animator() -> Animator {
     let idle_state = AnimationState {
         name: "Idle".to_string(),
@@ -619,15 +622,22 @@ fn setup_animator() -> Animator {
     animator
 }
 
+/// 死亡
 #[exit("death")]
 fn on_martial_death(
     mut commands: Commands,
-    martial: Single<(Entity, &Transform), With<Martial>>,
+    martial: Single<Entity, With<Martial>>,
     blocks: Query<Entity, With<MartialBlocks>>,
     items: Res<ItemList>, 
+    hint: Query<Entity, With<HintEntity>>,
+    mut text: Single<&mut Text, With<Hint>>,
 ) {
-    let (entity, transform) = martial.into_inner();
+    let entity = martial.into_inner();
+    for h in hint {
+        commands.entity(h).despawn();
+    }
     commands.entity(entity).despawn();
+    // 掉落卷轴
     commands.spawn((
         Sprite {
             image: items.infos.get(&String::from("MartialScroll")).unwrap().icon.clone(),
@@ -644,6 +654,7 @@ fn on_martial_death(
     for block in blocks {
         commands.entity(block).despawn();
     }
+    text.0 = "Brave Hero... \nGo Back to Where You Start...".to_string();
 } 
 
 #[enter("attack1")]

@@ -1,33 +1,29 @@
-use bevy::asset;
-use bevy_tnua::math::*;
+//! 玩家输入控制器
+//! 调用leafwing_input_manager实现
 
+use bevy_tnua::math::*;
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 use bevy_tnua::prelude::*;
-use bevy_tnua::builtins::*;
-use bevy_kira_audio::prelude::*;
 
 use crate::animator::Animator;
 use crate::damagable::Damagable;
-use crate::healthbar::Hint;
 use crate::items::ActiveItems;
-use crate::items::ItemList;
 use crate::items::NearingItem;
 use crate::items::NotpickedItems;
 use crate::items::PickItemTrigger;
-use crate::items::UseItemTrigger;
 use crate::player::Player;
-use crate::PausedState;
 
+/// 走路速度
 const WALK_SPEED: f32 = 80.0;
+/// 跑步速度
 const RUN_SPEED: f32 = 120.0;
+/// 移动加速度
 const MOVE_ACC: f32 = 600.0;
+/// 下蹲速度
 const CROUCH_SPEED: f32 = 50.0;
-const SLIDE_SPEED: f32 = 400.0;
-const SLIDE_ACC: f32 = 400.0;
-const JUMP_IMPULSE: f32 = 600.0;
-
+/// 获取速度
 pub fn get_speed(animator: &Animator) -> f32 {
     if animator.get_bool("can_move") {
         if animator.get_bool("is_moving") {
@@ -43,21 +39,21 @@ pub fn get_speed(animator: &Animator) -> f32 {
     0.0
 }
 
-/** 键盘输入模块 */
+/// 键盘输入模块
 #[derive(Bundle)]
 pub struct PlayerInputBundle {
-    input_manager: InputManagerBundle<Action>,
+    input_manager: InputMap<Action>,
 }
 
 impl Default for PlayerInputBundle {
     fn default() -> Self {
         Self {
-            input_manager: InputManagerBundle::with_map(PlayerInputBundle::default_input_map()),
+            input_manager: PlayerInputBundle::default_input_map(),
         }
     }
 }
 
-/** 设置默认键位 */
+/// 设置默认键位
 impl PlayerInputBundle {
     fn default_input_map() -> InputMap<Action> {
         let mut input_map = InputMap::default();
@@ -74,11 +70,12 @@ impl PlayerInputBundle {
         input_map.insert(Action::UseItem, KeyCode::KeyR);
         input_map.insert(Action::PickItem, KeyCode::KeyE);
         input_map.insert(Action::ReverseGravity, KeyCode::KeyG);
+        input_map.insert(Action::ChangeItem, KeyCode::Tab);
         input_map
     }
 }
 
-/** 键位对应的动作 */
+/// 键位对应的动作
 #[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
 pub enum Action {
     Up,
@@ -93,9 +90,10 @@ pub enum Action {
     UseItem,
     PickItem,
     ReverseGravity,
+    ChangeItem
 }
 
-/** 每个动作对应的一些实用方法 */
+/// 每个动作对应的一些方法
 impl Action {
     const DIRECTIONS: [Self; 4] = [Action::Up, Action::Down, Action::Left, Action::Right];
 
@@ -110,6 +108,7 @@ impl Action {
     }
 }
 
+/// 输入移动按键
 fn on_move(
     player: Single<
         (
@@ -129,19 +128,19 @@ fn on_move(
     for input_direction in Action::DIRECTIONS {
         if action_state.pressed(&input_direction) {
             if let Some(direction) = input_direction.direction() {
-                // Sum the directions as 2D vectors
+                // 计算移动向量
                 direction_vector += *direction;
             }
         }
     }
 
-    // Then reconvert at the end, normalizing the magnitude
+    // 设置是否正在活动
     let is_moving = direction_vector != Vec2::ZERO;
     if is_moving {
         direction_vector = direction_vector.normalize();
     }
 
-    // Set Face Direction
+    // 设置朝向
     if direction_vector.x > 0.0 && !animator.get_bool("is_facing_right") {
         animator.set_bool("is_facing_right", true);
         transform.scale.x *= -1.0;
@@ -151,10 +150,11 @@ fn on_move(
         transform.scale.x *= -1.0;
     }
 
-    // Set parameters
+    // 设置动画状态机参数
     animator.set_bool("is_moving", is_moving);
     animator.set_float("velocity_y", vel.y);
     
+    // 设置控制器
     controller.basis(TnuaBuiltinWalk {
         desired_velocity: Vec3::new(direction_vector.x , 0., 0.)* get_speed(&*animator),
         float_height: 18.,
@@ -165,36 +165,36 @@ fn on_move(
     });
 }
 
+/// 输入下蹲按键
 fn on_crouch(player: Single<(&ActionState<Action>, &mut Animator), With<Player>>) {
     let (action_state, mut animator) = player.into_inner();
     if action_state.just_pressed(&Action::Crouch) {
         let crouching = animator.get_bool("is_crouching");
+        // 通知动画状态机下蹲
         animator.set_bool("is_crouching", !crouching);
     }
 }
 
+/// 输入跳跃按键
 fn on_jump(
-    player: Single<(&ActionState<Action>, &mut TnuaController, &mut Animator), With<Player>>,
+    player: Single<(&ActionState<Action>, &mut Animator), With<Player>>,
 ) {
-    let (action_state, mut controller, mut animator) = player.into_inner();
-    if action_state.just_pressed(&Action::Jump)
-        && animator.get_bool("can_move")
-    {
+    let (action_state, mut animator) = player.into_inner();
+    if action_state.just_pressed(&Action::Jump) && animator.get_bool("can_move") {
+        // 通知动画状态机跳跃
         animator.set_trigger("jump");
-        controller.action(TnuaBuiltinJump {
-            height: JUMP_IMPULSE,
-            allow_in_air: animator.get_bool("is_on_wall") && animator.get_bool("can_wall_jump"),
-            ..Default::default()
-        });
     }
 }
 
+/// 输入跑步按键
 fn on_run(player: Single<(&ActionState<Action>, &mut Animator), With<Player>>) {
     let (action_state, mut animator) = player.into_inner();
     let is_running = action_state.pressed(&Action::Run);
+    // 通知动画状态机跑步
     animator.set_bool("is_running", is_running);
 }
 
+/// 输入攻击按键
 fn on_attack(player: Single<(&ActionState<Action>, &mut Animator), With<Player>>) {
     let (action_state, mut animator) = player.into_inner();
     if action_state.just_pressed(&Action::Attack) {
@@ -202,6 +202,7 @@ fn on_attack(player: Single<(&ActionState<Action>, &mut Animator), With<Player>>
     }
 }
 
+/// 输入防守按键
 fn on_defense(player: Single<(&ActionState<Action>, &mut Animator, &mut Damagable), With<Player>>) {
     let (action_state, mut animator, mut damagable) = player.into_inner();
     if action_state.just_pressed(&Action::Defense) {
@@ -210,37 +211,29 @@ fn on_defense(player: Single<(&ActionState<Action>, &mut Animator, &mut Damagabl
     }
 }
 
+/// 输入滑行按键
 fn on_slide(
     time: Res<Time>,
-    player: Single<(&ActionState<Action>, &mut Animator, &mut TnuaController, &mut Damagable), With<Player>>,
+    player: Single<(&ActionState<Action>, &mut Animator, &mut Damagable), With<Player>>,
 ) {
-    let (action_state, mut animator, mut controller, mut damagable) = player.into_inner();
+    let (action_state, mut animator, mut damagable) = player.into_inner();
+    // 计算按跑步按键时间
     if action_state.pressed(&Action::Run) {
         let shift_press_time = animator.get_float("shift_press_time");
         animator.set_float("shift_press_time", shift_press_time + time.delta_secs());
     }
     if action_state.just_released(&Action::Run) {
         let shift_press_time = animator.get_float("shift_press_time");
+        // 短按 -> 滑行
         if shift_press_time <= 0.4 {
             animator.set_trigger("slide");
             damagable.set_invincible_with_time(0.5);
-            let facing_direction = if animator.get_bool("is_facing_right") {
-                1.
-            } else {
-                -1.
-            };
-            controller.action(TnuaBuiltinDash {
-                displacement: Vec3::new(100., 0., 0.)* facing_direction ,
-                speed: SLIDE_SPEED * 2.,
-                acceleration: SLIDE_ACC * 2.,
-                brake_acceleration: SLIDE_ACC * 2.,
-                ..Default::default()
-            });
         }
         animator.set_float("shift_press_time", 0.0);
     }
 }
 
+/// 输入使用物品按键
 fn on_use(
     player: Single<(&ActionState<Action>, &mut Animator), With<Player>>,
 ) {
@@ -250,6 +243,7 @@ fn on_use(
     }
 }
 
+/// 输入拾取物品按键
 fn on_pick(
     mut commands: Commands,
     player: Single<(Entity, &NearingItem, &ActionState<Action>), With<Player>>,
@@ -259,6 +253,7 @@ fn on_pick(
     if action_state.just_pressed(&Action::PickItem) {
         for item in (**nearing_items).clone() {
             let item_info = items.get(item).unwrap();
+            // 触发拾取物品触发器
             commands.trigger(PickItemTrigger { 
                 picker: entity, 
                 item: item_info.id.clone(), 
@@ -268,12 +263,25 @@ fn on_pick(
     }
 }
 
+/// 输入反转重力按键
 fn on_reverse(
     player: Single<(&Animator, &mut GravityScale, &ActionState<Action>), With<Player>>,
 ) {
     let (animator, mut gravity, action_state) = player.into_inner();
+    // 若已经获得能力
     if action_state.just_pressed(&Action::ReverseGravity) && animator.get_bool("can_reverse_gravity") {
         gravity.0 = -gravity.0 - 100.;
+    }
+}
+
+/// 输入更换物品按键
+fn on_change_item(
+    player: Single<(&mut ActiveItems, &ActionState<Action>), With<Player>>,
+) {
+    let (mut acts, action_state) = player.into_inner();
+    if action_state.just_pressed(&Action::ChangeItem) {
+        if acts.items.len() == 0 { return; }
+        acts.current = (acts.current + 1) % acts.items.len();
     }
 }
 
@@ -297,6 +305,7 @@ impl<S: States> Plugin for PlayerInputPlugin<S> {
                 on_use.run_if(in_state(self.state.clone())),
                 on_pick.run_if(in_state(self.state.clone())),
                 on_reverse.run_if(in_state(self.state.clone())),
+                on_change_item.run_if(in_state(self.state.clone())),
             )
         );
     }

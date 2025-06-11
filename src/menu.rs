@@ -1,15 +1,19 @@
 use bevy::prelude::*;
 
-use crate::{save::{load, trigger_load, LoadRequest, TransformData}, AppState};
+use crate::AppState;
+
+/// 主菜单选项
 #[derive(Component)]
 pub struct MenuItem {
     pub id: i32,
     pub is_selected: bool,
 }
 
+/// 主菜单UI标识组件
 #[derive(Component)]
 pub struct UI;
 
+/// 生成主菜单
 fn spawn_box(
     mut commands: Commands, 
     asset_server: Res<AssetServer>,
@@ -17,7 +21,6 @@ fn spawn_box(
     let color = Color::srgb(0., 0., 0.);
 
     let start_text = Text::new("[ Game Start ]");
-    let load_text = Text::new("Game Load");
     let exit_text = Text::new("Game Exit");
     let font = TextFont {
         font: asset_server.load("UI/Fonts/m5x7.ttf"),
@@ -65,7 +68,7 @@ fn spawn_box(
         )]
     )).id();
 
-    let load_node_entity = commands.spawn((
+    let exit_node_entity = commands.spawn((
         Node {
             position_type: PositionType::Absolute,
             width: Val::Percent(100.),
@@ -75,31 +78,17 @@ fn spawn_box(
             //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
             ..default()
         },
-        children![(
-            load_text, font.clone(), Label, MenuItem { id: 1, is_selected : false }
-        )]
-    )).id();
-
-    let exit_node_entity = commands.spawn((
-        Node {
-            position_type: PositionType::Absolute,
-            width: Val::Percent(100.),
-            height: Val::Percent(10.),
-            top: Val::Percent(83.),
-            justify_content: JustifyContent::Center,
-            //padding: UiRect::left(Val::Px(5.)).with_bottom(Val::Px(5.)),
-            ..default()
-        },
         children![
-            (exit_text, font.clone(), Label, MenuItem { id: 2, is_selected : false })
+            (exit_text, font.clone(), Label, MenuItem { id: 1, is_selected : false })
         ]
     )).id();
 
     commands
         .entity(ui_entity)
-        .add_children(&[title_entity, start_node_entity, load_node_entity, exit_node_entity]);
+        .add_children(&[title_entity, start_node_entity, exit_node_entity]);
 }
 
+/// 处理上下选择
 fn handle_choice(
     mut items: Query<(&mut Text, &mut MenuItem)>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
@@ -158,6 +147,7 @@ fn handle_choice(
     }
 }
 
+/// 处理确认输入
 fn handle_enter(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     items: Query<&MenuItem>,
@@ -165,27 +155,16 @@ fn handle_enter(
     ui: Single<Entity, With<UI>>,
     mut next_state: ResMut<NextState<AppState>>,
     mut exit_events: EventWriter<AppExit>,
-    mut transform: ResMut<TransformData>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Enter) {
         for item in &items {
             if item.is_selected {
                 if item.id == 0 {
                     let entity = ui.into_inner();
-                    commands.entity(entity).despawn_recursive();
+                    commands.entity(entity).despawn();
                     next_state.set(AppState::InGame);
-                } else if item.id == 1 {
-                    let entity = ui.into_inner();
-                    let trans = load().unwrap();
-                    transform.translation = trans.translation;
-                    transform.rotation = trans.rotation;
-                    transform.scale = trans.scale;
-                    transform.damagable = trans.damagable;
-                    transform.params = trans.params;
-                    commands.entity(entity).despawn_recursive();
-                    next_state.set(AppState::InGame)
-                } else if item.id == 2 {
-                    exit_events.send(AppExit::Success);
+                }else if item.id == 1 {
+                    exit_events.write(AppExit::Success);
                 }
                 break;
             }

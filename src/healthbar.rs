@@ -1,3 +1,5 @@
+//! 生成血条
+
 use bevy::prelude::*;
 
 use crate::damagable::Damagable;
@@ -7,27 +9,31 @@ use crate::player::Player;
 const MAX_HEALTH_LEN: f32 = 300.;
 const MAX_HEALTH_WID: f32 = 30.;
 
+/// 血条背景
 #[derive(Component)]
 pub struct HealthBarBg {
     pub length: f32,
 }
 
+/// 血条
 #[derive(Component)]
 pub struct HealthBar {
     pub length: f32,
 }
 
+/// 血条左部物品块
 #[derive(Component)]
 pub struct ItemImg {
     pub index: Option<usize>,   
 }
 
+/// 物品数量
 #[derive(Component)]
 pub struct ItemNum {
     pub nums: u32,
 }
 
-
+/// 更新物品块
 fn update_item(
     item_list: Single<(&ActiveItems, &ItemBag), With<Player>>,
     item_img: Single<(&mut ImageNode, &mut ItemImg)>,
@@ -45,24 +51,17 @@ fn update_item(
     }
     let item_now = active.get_current_item();
     let item_stack = bag.slots.get(&item_now).unwrap();
-    if item_img.index == None {
-        item_img.index = Some(active.current);
-        item.image = items.infos.get(&item_now).unwrap().icon.clone();
-        item_num.nums = 0;
-    }
-    if let Some(_) = item_img.index {
-        item_img.index = Some(active.current);
-        item.image = items.infos.get(&item_now).unwrap().icon.clone()
-    }
-    if item_num.nums != *item_stack {
-        item_num.nums = *item_stack;
-        text.0 = (*item_stack).to_string();
-    }
+    item_img.index = Some(active.current);
+    item.image = items.infos.get(&item_now).unwrap().icon.clone();
+    item_num.nums = *item_stack;
+    text.0 = (*item_stack).to_string();
 }
 
+/// 提示UI
 #[derive(Component)]
 pub struct Hint;
 
+/// 初始化血条UI
 fn spawn_box(
     mut commands: Commands, 
     asset_server: Res<AssetServer>,
@@ -193,6 +192,7 @@ fn spawn_box(
     //commands.entity(text_node_entity).add_children(&[text_entity]);
 }
 
+/// 更新血量
 fn update_health(
     time: Res<Time>,
     damagable: Single<&Damagable, With<Player>>,

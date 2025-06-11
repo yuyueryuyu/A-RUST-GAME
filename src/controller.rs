@@ -1,8 +1,11 @@
+//! 控制器组件包，调用bevy_tnua
+
 use bevy::prelude::*;
 use avian2d::prelude::*;
 use bevy_tnua::prelude::*;
 use bevy_tnua_avian2d::*;
 
+/// 控制器组件包
 #[derive(Bundle)]
 pub struct ControllerBundle {
     controller: TnuaController,

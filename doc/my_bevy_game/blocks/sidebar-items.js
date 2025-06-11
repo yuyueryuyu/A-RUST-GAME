@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["end_game","fire_demon_observer","martial_observer","setup_blocks","throne_position_system","throne_position_system_prequisite"],"struct":["BlockPlugin","FireDemonBlocks","InitialGate","KingdomThrone","MartialBlocks"]};

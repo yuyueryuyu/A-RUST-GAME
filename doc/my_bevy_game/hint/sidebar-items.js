@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["print_ended_collisions","print_started_collisions","spawn_hint_colliders"],"struct":["BattleHint","HintEntity","HintPlugin","ItemHint","JumpHint","SlideHint","UseHint","WASDHint"]};

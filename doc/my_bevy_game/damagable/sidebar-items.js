@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["check_death","check_defending","check_hitbox","check_invincible"],"struct":["Damagable","DamagePlugin","HasHitbox","HitBox","HitboxOf"]};

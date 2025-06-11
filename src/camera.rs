@@ -1,3 +1,5 @@
+//! 相机系统实现
+
 use bevy::{
     prelude::*,
     render::{
@@ -17,6 +19,7 @@ struct InGameCamera;
 
 const PIXEL_PERFECT_LAYERS: RenderLayers = RenderLayers::layer(0);
 
+/// 初始化相机
 fn setup_camera(mut commands: Commands) {
     commands.spawn((
         Camera2d,
@@ -48,7 +51,7 @@ fn setup_camera(mut commands: Commands) {
     ));
 }
 
-// 定义相机跟随组件
+/// 相机跟随组件
 #[derive(Component, Reflect)]
 pub struct CameraFollow {
     pub dead_zone_width: f32,
@@ -62,7 +65,7 @@ pub struct CameraFollow {
     pub previous_target_position: Vec3,
 }
 
-// 世界坐标到屏幕坐标转换
+/// 世界坐标到屏幕坐标转换
 fn world_to_screen(
     camera: &Camera,
     camera_transform: &GlobalTransform,
@@ -82,7 +85,7 @@ fn world_to_screen(
     Some(Vec2::new(screen_x, screen_y))
 }
 
-// 屏幕坐标到世界坐标转换
+/// 屏幕坐标到世界坐标转换
 fn screen_to_world(
     camera: &Camera,
     camera_transform: &GlobalTransform,
@@ -99,7 +102,7 @@ fn screen_to_world(
     Some(world_pos)
 }
 
-// 阻尼系统实现
+/// 计算阻尼
 fn compute_soft_damping(
     current_pos: Vec3,
     target_pos: Vec3,
@@ -118,12 +121,12 @@ fn compute_soft_damping(
     }
 }
 
-// 预测系统实现
+/// 计算预测位置
 fn compute_predicted_position(current_pos: Vec3, velocity: Vec3, look_ahead_time: f32) -> Vec3 {
     current_pos + velocity * look_ahead_time
 }
 
-// 轴向约束应用
+/// 应用轴向约束
 fn apply_axis_constraints(position: Vec3, constraints: [bool; 3], constraint_values: Vec3) -> Vec3 {
     let mut result = position;
     if constraints[0] {
@@ -138,7 +141,7 @@ fn apply_axis_constraints(position: Vec3, constraints: [bool; 3], constraint_val
     result
 }
 
-// 主相机跟随系统
+/// 相机跟随系统
 fn camera_follow_system(
     time: Res<Time>,
     player_query: Query<&Transform, With<player::Player>>,
@@ -147,7 +150,7 @@ fn camera_follow_system(
     let delta_time = time.delta_secs();
 
     for (mut cam_transform, camera, cam_global_transform, mut follow) in cameras.iter_mut() {
-        let Ok(target_transform) = player_query.get_single() else {
+        let Ok(target_transform) = player_query.single() else {
             continue;
         };
 
@@ -209,6 +212,7 @@ fn camera_follow_system(
     }
 }
 
+/// 应用视差效果
 fn update_parallax_effect(
     mut param_set: ParamSet<(
         Query<&Transform, With<player::Player>>,
@@ -216,11 +220,10 @@ fn update_parallax_effect(
         Query<(&mut Transform, &background::Background), Without<player::Player>>,
     )>,
 ) {
-    // 先获取所有需要的数据并存储在本地变量中
     let player_pos = param_set.p0().single().unwrap().translation;
     let camera_pos = param_set.p1().single().unwrap().translation;
 
-    // 然后处理背景
+    // 处理背景
     for (mut bg_transform, background) in param_set.p2().iter_mut() {
         let cam_move_since_start = Vec2::new(camera_pos.x, camera_pos.y) - background.starting_position;
         let z_distance_from_target = bg_transform.translation.z - player_pos.z;
@@ -237,9 +240,7 @@ pub struct CameraPlugin<S: States> {
 
 impl<S: States> Plugin for CameraPlugin<S> {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (
-            setup_camera),
-        );
+        app.add_systems(Startup, setup_camera);
         app.add_systems(Update, update_parallax_effect.run_if(in_state(self.state.clone())));
         app.add_systems(FixedUpdate, camera_follow_system.run_if(in_state(self.state.clone())));
     }
